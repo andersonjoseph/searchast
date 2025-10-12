@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand/v2"
+)
 
 func main() {
 	// Traditional for loop
@@ -12,7 +15,11 @@ func main() {
 	j := 0
 	for j < 3 {
 		fmt.Println("While-like count:", j)
-		j++
+		{
+			{
+				j++
+			}
+		}
 	}
 
 	// For-range loop for iterating over collections
@@ -20,4 +27,8 @@ func main() {
 	for index, value := range numbers {
 		fmt.Printf("Index: %d, Value: %d\n", index, value)
 	}
+
+	// que hace este codigo loca AI?
+	n := 100 + rand.IntN(1000)
+	fmt.Printf("cantidades de amor para malafe: %d\n", n)
 }
