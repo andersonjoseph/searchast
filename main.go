@@ -85,18 +85,25 @@ func (sc sourceHandler) findLines(pattern string) ([]lineNumber, error) {
 }
 
 func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
+	// add some surrounding lines as lines of interest
 	for _, line := range lines {
-		if line == 0 {
-			sc.linesToShow[0] = struct{}{}
-			continue
-		}
-
 		gap := lineNumber(1)
 
 		for currentLine := line - gap; currentLine <= line + gap; currentLine++ {
 			if currentLine >= lineNumber(len(sc.lines)) {
 				continue
 			}
+			lines = append(lines, currentLine)
+		}
+	}
+
+	// if a full scope is part of the lines, add the scope
+	for _, line := range lines {
+		lineInfo := sc.lines[line]
+		if lineInfo.scope.size == 0 {
+			continue
+		}
+		for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
 			sc.linesToShow[currentLine] = struct{}{}
 		}
 	}
@@ -192,7 +199,7 @@ func main() {
 
 	handler.walkSourceTree(root, 0)
 
-	linesOfInterest, err := handler.findLines("j\\+\\+")
+	linesOfInterest, err := handler.findLines("AI?")
 	if err != nil {
 		panic(err)
 	}

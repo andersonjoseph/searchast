@@ -11,8 +11,8 @@ func main() {
 		fmt.Println("Count:", i)
 	}
 
-	// For loop as a while loop
 	j := 0
+	// What the heck is this AI?
 	for j < 3 {
 		fmt.Println("While-like count:", j)
 		{
