@@ -37,9 +37,9 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 	startLine := node.StartPoint().Row
 	endLine := node.EndPoint().Row
 
-	for i := startLine; i <= endLine; i++ {
-		if parentLine != i && (sc.lines[i].parentLine == 0 || parentLine > sc.lines[i].parentLine) {
-			sc.lines[i].parentLine = parentLine
+	for currentLine := startLine; currentLine <= endLine; currentLine++ {
+		if parentLine != currentLine && (sc.lines[currentLine].parentLine == 0 || parentLine > sc.lines[currentLine].parentLine) {
+			sc.lines[currentLine].parentLine = parentLine
 		}
 	}
 
@@ -93,11 +93,11 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 
 		gap := lineNumber(1)
 
-		for i := line - gap; i <= line + gap; i++ {
-			if i >= lineNumber(len(sc.lines)) {
+		for currentLine := line - gap; currentLine <= line + gap; currentLine++ {
+			if currentLine >= lineNumber(len(sc.lines)) {
 				continue
 			}
-			sc.linesToShow[i] = struct{}{}
+			sc.linesToShow[currentLine] = struct{}{}
 		}
 	}
 
@@ -144,8 +144,8 @@ func (sc *sourceHandler) addChildContext(line lineNumber) {
 	lineInfo := sc.lines[line]
 
 	if lineInfo.scope.size < 5 {
-		for i := lineInfo.scope.startLine; i <= lineInfo.scope.endLine; i++ {
-			sc.linesToShow[i] = struct{}{}
+		for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
+			sc.linesToShow[currentLine] = struct{}{}
 		}
 		return
 	}
