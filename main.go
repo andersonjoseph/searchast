@@ -44,13 +44,11 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 
 	nodeSize := endLine - startLine 
 
-	if nodeSize > 0 {
-		if sc.lines[startLine].scope.size == 0 || nodeSize > sc.lines[startLine].scope.size {
-			sc.lines[startLine].scope = scopeInfo {
-				startLine: startLine,
-				endLine: endLine,
-				size: nodeSize,
-			}
+	if nodeSize > 0 && (sc.lines[startLine].scope.size == 0 || nodeSize > sc.lines[startLine].scope.size) {
+		sc.lines[startLine].scope = scopeInfo {
+			startLine: startLine,
+			endLine: endLine,
+			size: nodeSize,
 		}
 	}
 
