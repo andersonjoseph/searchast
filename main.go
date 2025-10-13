@@ -90,14 +90,15 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 		}
 	}
 
-	// if a full scope is part of the lines, add the scope
 	for _, line := range lines {
+		sc.linesToShow[line] = struct{}{}
+
 		lineInfo := sc.lines[line]
-		if lineInfo.scope.size == 0 {
-			continue
-		}
-		for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
-			sc.linesToShow[currentLine] = struct{}{}
+		if lineInfo.scope.size > 0 { // if a full scope is part of the lines, add the scope
+			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
+				sc.linesToShow[currentLine] = struct{}{}
+			}
+
 		}
 	}
 
