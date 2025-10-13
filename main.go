@@ -17,7 +17,6 @@ type lineNumber = uint32
 type lineInfo struct {
 	text string
 	parentLine lineNumber
-	childrens map[lineNumber]struct{}
 	scope scopeInfo
 }
 
@@ -41,13 +40,6 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 		if parentLine != currentLine && (sc.lines[currentLine].parentLine == 0 || parentLine > sc.lines[currentLine].parentLine) {
 			sc.lines[currentLine].parentLine = parentLine
 		}
-	}
-
-	if parentLine > 0 {
-		if sc.lines[parentLine].childrens == nil {
-			sc.lines[parentLine].childrens = make(map[lineNumber]struct{})
-		}
-		sc.lines[parentLine].childrens[startLine] = struct{}{}
 	}
 
 	nodeSize := endLine - startLine 
@@ -93,6 +85,7 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 			if currentLine >= lineNumber(len(sc.lines)) {
 				continue
 			}
+			//FIXME: maybe appending to the input slice is not the best idea
 			lines = append(lines, currentLine)
 		}
 	}
@@ -108,15 +101,8 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 		}
 	}
 
-	sc.linesToShow[0] = struct{}{}
-
-	bottomLine := lineNumber(len(sc.lines)-2)
-	sc.linesToShow[bottomLine] = struct{}{}
-	sc.addParentContext(bottomLine)
-
 	for _, line := range lines {
 		sc.addParentContext(line)
-		sc.addChildContext(line)
 	}
 
 	sortedLines := make([]lineNumber, 0, len(sc.linesToShow))
@@ -145,28 +131,6 @@ func (sc *sourceHandler) addParentContext(line lineNumber) {
 	}
 
 	sc.addParentContext(parentLine)
-}
-
-func (sc *sourceHandler) addChildContext(line lineNumber) {
-	lineInfo := sc.lines[line]
-
-	if lineInfo.scope.size < 5 {
-		for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
-			sc.linesToShow[currentLine] = struct{}{}
-		}
-		return
-	}
-
-	maxToShow := int(max(min(float64(lineInfo.scope.size)* 0.10, 25), 5))
-	currentlyShowing := len(sc.linesToShow)
-
-	for childLine := range lineInfo.childrens {
-		if len(sc.linesToShow) > currentlyShowing + maxToShow {
-			break
-		}
-
-		sc.addParentContext(childLine)
-	}
 }
 
 func main() {
