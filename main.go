@@ -18,10 +18,10 @@ type lineInfo struct {
 	text string
 	parentLine lineNumber
 	childrens map[lineNumber]struct{}
-	blockInfo blockInfo
+	scope scopeInfo
 }
 
-type blockInfo struct {
+type scopeInfo struct {
 	startLine lineNumber
 	endLine lineNumber
 	size uint32
@@ -53,8 +53,8 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 	nodeSize := endLine - startLine 
 
 	if nodeSize > 0 {
-		if sc.lines[startLine].blockInfo.size == 0 || nodeSize > sc.lines[startLine].blockInfo.size {
-			sc.lines[startLine].blockInfo = blockInfo {
+		if sc.lines[startLine].scope.size == 0 || nodeSize > sc.lines[startLine].scope.size {
+			sc.lines[startLine].scope = scopeInfo {
 				startLine: startLine,
 				endLine: endLine,
 				size: nodeSize,
@@ -130,8 +130,8 @@ func (sc *sourceHandler) addParentContext(line lineNumber) {
 
 	parentLineInfo := sc.lines[parentLine]
 
-	sc.linesToShow[parentLineInfo.blockInfo.startLine] = struct{}{}
-	sc.linesToShow[parentLineInfo.blockInfo.endLine] = struct{}{}
+	sc.linesToShow[parentLineInfo.scope.startLine] = struct{}{}
+	sc.linesToShow[parentLineInfo.scope.endLine] = struct{}{}
 
 	if parentLine == line {
 		return
@@ -143,14 +143,14 @@ func (sc *sourceHandler) addParentContext(line lineNumber) {
 func (sc *sourceHandler) addChildContext(line lineNumber) {
 	lineInfo := sc.lines[line]
 
-	if lineInfo.blockInfo.size < 5 {
-		for i := lineInfo.blockInfo.startLine; i <= lineInfo.blockInfo.endLine; i++ {
+	if lineInfo.scope.size < 5 {
+		for i := lineInfo.scope.startLine; i <= lineInfo.scope.endLine; i++ {
 			sc.linesToShow[i] = struct{}{}
 		}
 		return
 	}
 
-	maxToShow := int(max(min(float64(lineInfo.blockInfo.size)* 0.10, 25), 5))
+	maxToShow := int(max(min(float64(lineInfo.scope.size)* 0.10, 25), 5))
 	currentlyShowing := len(sc.linesToShow)
 
 	for childLine := range lineInfo.childrens {
