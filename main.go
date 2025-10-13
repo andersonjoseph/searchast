@@ -16,7 +16,7 @@ type lineNumber = uint32
 
 type lineInfo struct {
 	text string
-	parents map[lineNumber]struct{}
+	parentLine lineNumber
 	childrens map[lineNumber]struct{}
 	blockInfo blockInfo
 }
@@ -38,11 +38,9 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 	endLine := node.EndPoint().Row
 
 	for i := startLine; i <= endLine; i++ {
-		if sc.lines[i].parents == nil {
-			sc.lines[i].parents = make(map[lineNumber]struct{})
+		if parentLine != i && (sc.lines[i].parentLine == 0 || parentLine > sc.lines[i].parentLine) {
+			sc.lines[i].parentLine = parentLine
 		}
-
-		sc.lines[i].parents[parentLine] = struct{}{}
 	}
 
 	if parentLine > 0 {
@@ -124,24 +122,22 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 }
 
 func (sc *sourceHandler) addParentContext(line lineNumber) {
-	for parentLine := range sc.lines[line].parents {
-		if _, ok := sc.seenParents[parentLine]; ok {
-			continue
-		}
-
-		parentLineInfo := sc.lines[parentLine]
-
-		sc.linesToShow[parentLineInfo.blockInfo.startLine] = struct{}{}
-		sc.linesToShow[parentLineInfo.blockInfo.endLine] = struct{}{}
-
-		sc.seenParents[parentLine] = struct{}{}
-
-		if parentLine == line {
-			continue
-		}
-
-		sc.addParentContext(parentLine)
+	parentLine := sc.lines[line].parentLine
+	if _, ok := sc.seenParents[parentLine]; ok {
+		return
 	}
+	sc.seenParents[parentLine] = struct{}{}
+
+	parentLineInfo := sc.lines[parentLine]
+
+	sc.linesToShow[parentLineInfo.blockInfo.startLine] = struct{}{}
+	sc.linesToShow[parentLineInfo.blockInfo.endLine] = struct{}{}
+
+	if parentLine == line {
+		return
+	}
+
+	sc.addParentContext(parentLine)
 }
 
 func (sc *sourceHandler) addChildContext(line lineNumber) {
