@@ -32,6 +32,7 @@ type sourceHandler struct {
 	seenParents map[lineNumber]struct{}
 }
 
+// what is this function doing? AI?
 func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber) {
 	startLine := node.StartPoint().Row
 	endLine := node.EndPoint().Row
@@ -57,8 +58,8 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 	}
 }
 
-func (sc sourceHandler) findLines(pattern string) ([]lineNumber, error) {
-	found := make([]lineNumber, 0)
+func (sc sourceHandler) findLines(pattern string) (map[lineNumber]struct{}, error) {
+	found := make(map[lineNumber]struct{})
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -67,28 +68,27 @@ func (sc sourceHandler) findLines(pattern string) ([]lineNumber, error) {
 
 	for i, line := range sc.lines {
 		if re.MatchString(line.text) {
-			found = append(found, lineNumber(i))
+			found[lineNumber(i)] = struct{}{}
 		}
 	}
 
 	return found, nil
 }
 
-func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
+func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
 	// add some surrounding lines as lines of interest
-	for _, line := range lines {
-		gap := lineNumber(1)
+	for line := range linesOfInterest {
+		gap := lineNumber(1)//FIXME: this should be a parameter
 
 		for currentLine := line - gap; currentLine <= line + gap; currentLine++ {
 			if currentLine >= lineNumber(len(sc.lines)) {
 				continue
 			}
-			//FIXME: maybe appending to the input slice is not the best idea
-			lines = append(lines, currentLine)
+			sc.linesToShow[currentLine] = struct{}{}
 		}
 	}
 
-	for _, line := range lines {
+	for line := range linesOfInterest {
 		sc.linesToShow[line] = struct{}{}
 
 		lineInfo := sc.lines[line]
@@ -100,7 +100,7 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 		}
 	}
 
-	for _, line := range lines {
+	for line := range linesOfInterest {
 		sc.addParentContext(line)
 	}
 
@@ -110,7 +110,19 @@ func (sc *sourceHandler) addContext(lines []lineNumber) []lineNumber {
 	}
 	slices.Sort(sortedLines)
 
-	return sortedLines
+	gapToClose := lineNumber(3)//FIXME: this should be a parameter too
+	for i := range sortedLines {
+		if i == len(sortedLines)-1 {
+			continue
+		}
+
+		diff := sortedLines[i+1] - sortedLines[i]
+		if diff <= lineNumber(gapToClose) {
+			for currentLine := sortedLines[i] + 1; currentLine <= sortedLines[i+1]; currentLine++ {
+				sc.linesToShow[currentLine] = struct{}{}
+			}
+		}
+	}
 }
 
 func (sc *sourceHandler) addParentContext(line lineNumber) {
@@ -162,13 +174,35 @@ func main() {
 
 	handler.walkSourceTree(root, 0)
 
-	linesOfInterest, err := handler.findLines("AI?")
+	linesOfInterest, err := handler.findLines("j\\+\\+")
 	if err != nil {
 		panic(err)
 	}
-	linesToShow := handler.addContext(linesOfInterest)
 
-	for _, line := range linesToShow {
-		fmt.Printf("%d %v\n", line+1, handler.lines[line].text)
+	handler.addContext(linesOfInterest)
+	output := strings.Builder{}
+	isGapPrinted := false
+
+	for i, line := range lines {
+		if _, ok := handler.linesToShow[lineNumber(i)]; !ok {
+			if !isGapPrinted {
+				output.WriteString("⋮\n")
+				isGapPrinted = true
+			}
+
+			continue
+		}
+
+		isGapPrinted = false
+		var spacer string
+		if _, ok := linesOfInterest[lineNumber(i)]; ok {
+			spacer = "█"
+		} else {
+			spacer = "|"
+		}
+
+		output.WriteString(fmt.Sprintf("%d %s %s\n", i+1, spacer, line.text))
 	}
+
+	print(output.String())
 }
