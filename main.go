@@ -28,8 +28,8 @@ type scopeInfo struct {
 
 type sourceHandler struct {
 	lines []lineInfo
-	linesToShow map[lineNumber]struct{}
-	seenParents map[lineNumber]struct{}
+	linesToShow Set[lineNumber]
+	seenParents Set[lineNumber]
 }
 
 // what is this function doing? AI?
@@ -58,8 +58,8 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 	}
 }
 
-func (sc sourceHandler) findLines(pattern string) (map[lineNumber]struct{}, error) {
-	found := make(map[lineNumber]struct{})
+func (sc sourceHandler) findLines(pattern string) (Set[lineNumber], error) {
+	found := make(Set[lineNumber])
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -68,14 +68,14 @@ func (sc sourceHandler) findLines(pattern string) (map[lineNumber]struct{}, erro
 
 	for i, line := range sc.lines {
 		if re.MatchString(line.text) {
-			found[lineNumber(i)] = struct{}{}
+			found.Add(lineNumber(i))
 		}
 	}
 
 	return found, nil
 }
 
-func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
+func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 	// add some surrounding lines as lines of interest
 	for line := range linesOfInterest {
 		gap := lineNumber(1)//FIXME: this should be a parameter
@@ -84,17 +84,18 @@ func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
 			if currentLine >= lineNumber(len(sc.lines)) {
 				continue
 			}
-			sc.linesToShow[currentLine] = struct{}{}
+			sc.linesToShow.Add(currentLine)
 		}
 	}
 
 	for line := range linesOfInterest {
-		sc.linesToShow[line] = struct{}{}
+		sc.linesToShow.Add(line)
 
 		lineInfo := sc.lines[line]
 		if lineInfo.scope.size > 0 { // if a full scope is part of the lines, add the scope
 			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
-				sc.linesToShow[currentLine] = struct{}{}
+
+				sc.linesToShow.Add(currentLine)
 			}
 
 		}
@@ -104,10 +105,7 @@ func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
 		sc.addParentContext(line)
 	}
 
-	sortedLines := make([]lineNumber, 0, len(sc.linesToShow))
-	for ln := range sc.linesToShow {
-		sortedLines = append(sortedLines, ln)
-	}
+	sortedLines := sc.linesToShow.ToSlice()
 	slices.Sort(sortedLines)
 
 	gapToClose := lineNumber(3)//FIXME: this should be a parameter too
@@ -119,7 +117,7 @@ func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
 		diff := sortedLines[i+1] - sortedLines[i]
 		if diff <= lineNumber(gapToClose) {
 			for currentLine := sortedLines[i] + 1; currentLine <= sortedLines[i+1]; currentLine++ {
-				sc.linesToShow[currentLine] = struct{}{}
+				sc.linesToShow.Add(currentLine)
 			}
 		}
 	}
@@ -127,15 +125,15 @@ func (sc *sourceHandler) addContext(linesOfInterest map[lineNumber]struct{}) {
 
 func (sc *sourceHandler) addParentContext(line lineNumber) {
 	parentLine := sc.lines[line].parentLine
-	if _, ok := sc.seenParents[parentLine]; ok {
+	if sc.seenParents.Has(parentLine) {
 		return
 	}
-	sc.seenParents[parentLine] = struct{}{}
+	sc.seenParents.Add(parentLine)
 
 	parentLineInfo := sc.lines[parentLine]
 
-	sc.linesToShow[parentLineInfo.scope.startLine] = struct{}{}
-	sc.linesToShow[parentLineInfo.scope.endLine] = struct{}{}
+	sc.linesToShow.Add(parentLineInfo.scope.startLine)
+	sc.linesToShow.Add(parentLineInfo.scope.endLine)
 
 	if parentLine == line {
 		return
@@ -168,8 +166,8 @@ func main() {
 
 	handler := sourceHandler {
 		lines: lines,
-		linesToShow: make(map[lineNumber]struct{}),
-		seenParents: make(map[lineNumber]struct{}),
+		linesToShow: NewSet[lineNumber](),
+		seenParents: NewSet[lineNumber](),
 	}
 
 	handler.walkSourceTree(root, 0)
@@ -184,7 +182,7 @@ func main() {
 	isGapPrinted := false
 
 	for i, line := range lines {
-		if _, ok := handler.linesToShow[lineNumber(i)]; !ok {
+		if !handler.linesToShow.Has(lineNumber(i)){
 			if !isGapPrinted {
 				output.WriteString("⋮\n")
 				isGapPrinted = true
@@ -195,7 +193,7 @@ func main() {
 
 		isGapPrinted = false
 		var spacer string
-		if _, ok := linesOfInterest[lineNumber(i)]; ok {
+		if linesOfInterest.Has(lineNumber(i)){
 			spacer = "█"
 		} else {
 			spacer = "|"
