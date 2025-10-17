@@ -125,7 +125,7 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 
 func (sc *sourceHandler) addParentContext(line lineNumber) {
 	parentLine := sc.lines[line].parentLine
-	if sc.seenParents.Has(parentLine) {
+	if sc.seenParents.Has(parentLine) || parentLine == 0 {
 		return
 	}
 	sc.seenParents.Add(parentLine)
