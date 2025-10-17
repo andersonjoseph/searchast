@@ -88,9 +88,9 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		}
 	}
 
-	linesSoFar := sc.linesToShow.ToSlice()
+	linesToCheckForScopes := sc.linesToShow.ToSlice()
 
-	for _, line := range linesSoFar {
+	for _, line := range linesToCheckForScopes {
 		sc.linesToShow.Add(line)
 
 		lineInfo := sc.lines[line]
@@ -101,7 +101,7 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		}
 	}
 
-	for line := range linesOfInterest {
+	for line := range sc.linesToShow {
 		sc.addParentContext(line)
 	}
 
@@ -125,7 +125,7 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 
 func (sc *sourceHandler) addParentContext(line lineNumber) {
 	parentLine := sc.lines[line].parentLine
-	if sc.seenParents.Has(parentLine) || parentLine == 0 {
+	if sc.seenParents.Has(parentLine) {
 		return
 	}
 	sc.seenParents.Add(parentLine)
@@ -196,10 +196,10 @@ func main() {
 		if linesOfInterest.Has(lineNumber(i)){
 			spacer = "█"
 		} else {
-			spacer = "|"
+			spacer = "│"
 		}
 
-		output.WriteString(fmt.Sprintf("%d %s %s\n", i+1, spacer, line.text))
+		output.WriteString(fmt.Sprintf("%s %s\n",  spacer, line.text))
 	}
 
 	print(output.String())
