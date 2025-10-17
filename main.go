@@ -88,16 +88,16 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		}
 	}
 
-	for line := range linesOfInterest {
+	linesSoFar := sc.linesToShow.ToSlice()
+
+	for _, line := range linesSoFar {
 		sc.linesToShow.Add(line)
 
 		lineInfo := sc.lines[line]
 		if lineInfo.scope.size > 0 { // if a full scope is part of the lines, add the scope
 			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
-
 				sc.linesToShow.Add(currentLine)
 			}
-
 		}
 	}
 
