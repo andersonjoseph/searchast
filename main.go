@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"iter"
 	"os"
 	"regexp"
 	"slices"
@@ -27,6 +28,16 @@ type scope struct {
 
 func (s scope) Size() uint32 {
 	return s.end - s.start
+}
+
+func (s scope) Children()iter.Seq[lineNumber] {
+	return func(yield func(lineNumber) bool) {
+		for currentChild := s.start; currentChild <= s.end; currentChild++ {
+			if !yield(currentChild) {
+				return
+			}
+		}
+	}
 }
 
 type SourceTree struct {
@@ -120,10 +131,8 @@ func (st *SourceTree) addContext(linesOfInterest Set[lineNumber]) {
 
 	for _, line := range linesSoFar {
 		lineInfo := st.lines[line]
-		if lineInfo.scope.Size() > 0 { // if a full scope is part of the lines, add the scope
-			for currentLine := lineInfo.scope.start; currentLine <= lineInfo.scope.end; currentLine++ {
-				st.linesToShow.Add(currentLine)
-			}
+		for childLine := range lineInfo.scope.Children() {
+			st.linesToShow.Add(childLine)
 		}
 	}
 
