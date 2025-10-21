@@ -23,7 +23,9 @@ type lineInfo struct {
 type scopeInfo struct {
 	startLine lineNumber
 	endLine lineNumber
-	size uint32
+}
+func (s scopeInfo) Size() uint32 {
+	return s.endLine - s.startLine
 }
 
 type sourceHandler struct {
@@ -46,12 +48,9 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node) {
 
 	nodeSize := endLine - startLine 
 
-	if nodeSize > 0 && (sc.lines[startLine].scope.size == 0 || nodeSize > sc.lines[startLine].scope.size) {
-		sc.lines[startLine].scope = scopeInfo {
-			startLine: startLine,
-			endLine: endLine,
-			size: nodeSize,
-		}
+	if nodeSize > 0 && (sc.lines[startLine].scope.Size() == 0 || nodeSize > sc.lines[startLine].scope.Size()) {
+		sc.lines[startLine].scope.startLine = startLine
+		sc.lines[startLine].scope.endLine = endLine
 	}
 
 	childCount := int(node.ChildCount())
@@ -103,7 +102,7 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 
 	for _, line := range linesSoFar {
 		lineInfo := sc.lines[line]
-		if lineInfo.scope.size > 0 { // if a full scope is part of the lines, add the scope
+		if lineInfo.scope.Size() > 0 { // if a full scope is part of the lines, add the scope
 			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
 				sc.linesToShow.Add(currentLine)
 			}
@@ -158,7 +157,7 @@ func (sc *sourceHandler) addParentContext(line lineNumber) {
 }
 
 func (sc *sourceHandler) addChildContext(line lineNumber) {
-	if line == 0 || sc.lines[line].scope.size == 0 {
+	if line == 0 || sc.lines[line].scope.Size() == 0 {
 		return
 	}
 
@@ -166,7 +165,7 @@ func (sc *sourceHandler) addChildContext(line lineNumber) {
 
 	 // FIXME: most of these parameters should be configurable
 	limitLine := min(lineNumber(3) + lineInfo.scope.startLine, lineInfo.scope.endLine)
-	threshold := lineInfo.scope.startLine + ((lineInfo.scope.size * 70) / 100)
+	threshold := lineInfo.scope.startLine + ((lineInfo.scope.Size() * 70) / 100)
 
 	if limitLine > threshold {
 		limitLine = lineInfo.scope.endLine
