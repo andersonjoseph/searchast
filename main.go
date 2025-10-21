@@ -33,15 +33,16 @@ type sourceHandler struct {
 }
 
 // what is this function doing? AI?
-func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber) {
+func (sc *sourceHandler) walkSourceTree(node *sitter.Node) {
+	if !node.IsNamed() {
+		for i := range node.ChildCount() {
+			sc.walkSourceTree(node.Child(int(i)))
+		}
+		return
+	}
+
 	startLine := node.StartPoint().Row
 	endLine := node.EndPoint().Row
-
-	for currentLine := startLine; currentLine <= endLine; currentLine++ {
-		if parentLine != currentLine && (sc.lines[currentLine].parentLine == 0 || parentLine > sc.lines[currentLine].parentLine) {
-			sc.lines[currentLine].parentLine = parentLine
-		}
-	}
 
 	nodeSize := endLine - startLine 
 
@@ -53,8 +54,18 @@ func (sc *sourceHandler) walkSourceTree(node *sitter.Node, parentLine lineNumber
 		}
 	}
 
-	for i := range node.ChildCount() {
-		sc.walkSourceTree(node.Child(int(i)), startLine)
+	childCount := int(node.ChildCount())
+	for i := range childCount {
+		child := node.Child(i)
+		childLine := child.StartPoint().Row 
+
+		if startLine != childLine {
+			if sc.lines[childLine].parentLine == 0 {
+				sc.lines[childLine].parentLine = startLine
+			}
+		}
+
+		sc.walkSourceTree(child)
 	}
 }
 
@@ -170,7 +181,7 @@ func main() {
 		seenParents: NewSet[lineNumber](),
 	}
 
-	handler.walkSourceTree(root, 0)
+	handler.walkSourceTree(root)
 
 	linesOfInterest, err := handler.findLines("j\\+\\+")
 	if err != nil {
