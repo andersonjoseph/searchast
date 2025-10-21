@@ -99,11 +99,9 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		}
 	}
 
-	linesToCheckForScopes := sc.linesToShow.ToSlice()
+	linesSoFar := sc.linesToShow.ToSlice()
 
-	for _, line := range linesToCheckForScopes {
-		sc.linesToShow.Add(line)
-
+	for _, line := range linesSoFar {
 		lineInfo := sc.lines[line]
 		if lineInfo.scope.size > 0 { // if a full scope is part of the lines, add the scope
 			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
@@ -112,8 +110,14 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		}
 	}
 
-	for line := range sc.linesToShow {
+	linesSoFar = sc.linesToShow.ToSlice()
+	for _, line := range linesSoFar {
 		sc.addParentContext(line)
+	}
+
+	linesSoFar = sc.linesToShow.ToSlice()
+	for _, line := range linesSoFar {
+		sc.addChildContext(line)
 	}
 
 	sortedLines := sc.linesToShow.ToSlice()
@@ -151,6 +155,27 @@ func (sc *sourceHandler) addParentContext(line lineNumber) {
 	}
 
 	sc.addParentContext(parentLine)
+}
+
+func (sc *sourceHandler) addChildContext(line lineNumber) {
+	if line == 0 || sc.lines[line].scope.size == 0 {
+		return
+	}
+
+	lineInfo := sc.lines[line] 
+
+	 // FIXME: most of these parameters should be configurable
+	limitLine := min(lineNumber(3) + lineInfo.scope.startLine, lineInfo.scope.endLine)
+	threshold := lineInfo.scope.startLine + ((lineInfo.scope.size * 70) / 100)
+
+	if limitLine > threshold {
+		limitLine = lineInfo.scope.endLine
+	}
+
+	for currentLine := lineInfo.scope.startLine; currentLine <= limitLine; currentLine++ {
+		sc.linesToShow.Add(currentLine)
+		sc.linesToShow.Add(sc.lines[currentLine].scope.endLine)
+	}
 }
 
 func main() {
