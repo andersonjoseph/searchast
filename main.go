@@ -24,6 +24,7 @@ type scopeInfo struct {
 	startLine lineNumber
 	endLine lineNumber
 }
+
 func (s scopeInfo) Size() uint32 {
 	return s.endLine - s.startLine
 }
@@ -119,6 +120,10 @@ func (sc *sourceHandler) addContext(linesOfInterest Set[lineNumber]) {
 		sc.addChildContext(line)
 	}
 
+	sc.closeGaps()
+}
+
+func (sc *sourceHandler) closeGaps() {
 	sortedLines := sc.linesToShow.ToSlice()
 	slices.Sort(sortedLines)
 
