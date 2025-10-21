@@ -46,7 +46,22 @@ type SourceTree struct {
 	seenParents Set[lineNumber]
 }
 
-func NewSourceTree(sourceCode string) SourceTree {
+func NewSourceTree(filename string) (SourceTree, error) {
+	sourceCode, err := os.ReadFile(filename)
+	if err != nil {
+		return SourceTree{}, fmt.Errorf("failed to read file %s: %w", filename, err)
+	}
+	parser := sitter.NewParser()
+
+	//TODO: we need to find a way to get the language from the file extension
+	parser.SetLanguage(golang.GetLanguage())
+
+	tree, err := parser.ParseCtx(context.Background(), nil, sourceCode)
+	if err != nil {
+		panic(err)
+	}
+	root := tree.RootNode()
+
 	sourceLines := strings.Split(string(sourceCode), "\n")
 
 	lines := make([]line, len(sourceLines))
@@ -60,7 +75,9 @@ func NewSourceTree(sourceCode string) SourceTree {
 		seenParents: NewSet[lineNumber](),
 	}
 
-	return st
+	st.build(root)
+
+	return st, nil
 }
 
 func (st *SourceTree) build(node *sitter.Node) {
@@ -102,7 +119,7 @@ func (st SourceTree) findLines(pattern string) (Set[lineNumber], error) {
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compile regex pattern: %w", err)
 	}
 
 	for i, line := range st.lines {
@@ -209,22 +226,10 @@ func (st *SourceTree) addChildContext(line lineNumber) {
 }
 
 func main() {
-	source, err := os.ReadFile("./main.go")
+	sourceTree, err := NewSourceTree("./main.go")
 	if err != nil {
 		panic(err)
 	}
-
-	parser := sitter.NewParser()
-	parser.SetLanguage(golang.GetLanguage())
-
-	tree, err := parser.ParseCtx(context.Background(), nil, source)
-	if err != nil {
-		panic(err)
-	}
-	root := tree.RootNode()
-
-	sourceTree := NewSourceTree(string(source))
-	sourceTree.build(root)
 
 	linesOfInterest, err := sourceTree.findLines("AI\\?")
 	if err != nil {
