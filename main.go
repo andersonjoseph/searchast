@@ -42,6 +42,7 @@ func (s scope) Children()iter.Seq[lineNumber] {
 
 type SourceTree struct {
 	lines []line
+	linesOfInterest Set[lineNumber]
 	linesToShow Set[lineNumber]
 	seenParents Set[lineNumber]
 }
@@ -72,6 +73,7 @@ func NewSourceTree(filename string) (SourceTree, error) {
 	st := SourceTree {
 		lines: lines,
 		linesToShow: NewSet[lineNumber](),
+		linesOfInterest: NewSet[lineNumber](),
 		seenParents: NewSet[lineNumber](),
 	}
 
@@ -114,8 +116,7 @@ func (st *SourceTree) build(node *sitter.Node) {
 	}
 }
 
-func (st SourceTree) findLines(pattern string) (Set[lineNumber], error) {
-	found := make(Set[lineNumber])
+func (st *SourceTree) findLines(pattern string) (Set[lineNumber], error) {
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
@@ -124,16 +125,16 @@ func (st SourceTree) findLines(pattern string) (Set[lineNumber], error) {
 
 	for i, line := range st.lines {
 		if re.MatchString(line.text) {
-			found.Add(lineNumber(i))
+			st.linesOfInterest.Add(lineNumber(i))
 		}
 	}
 
-	return found, nil
+	return st.linesOfInterest, nil
 }
 
-func (st *SourceTree) addContext(linesOfInterest Set[lineNumber]) {
+func (st *SourceTree) addContext() {
 	// add some surrounding lines as lines of interest
-	for line := range linesOfInterest {
+	for line := range st.linesOfInterest {
 		gap := lineNumber(3)//FIXME: this should be a parameter
 
 		for currentLine := line - gap; currentLine <= line + gap; currentLine++ {
@@ -225,23 +226,12 @@ func (st *SourceTree) addChildContext(line lineNumber) {
 	}
 }
 
-func main() {
-	sourceTree, err := NewSourceTree("./main.go")
-	if err != nil {
-		panic(err)
-	}
-
-	linesOfInterest, err := sourceTree.findLines("AI\\?")
-	if err != nil {
-		panic(err)
-	}
-
-	sourceTree.addContext(linesOfInterest)
+func (st *SourceTree) formatOutput() string {
 	output := strings.Builder{}
 	isGapPrinted := false
 
-	for i, line := range sourceTree.lines {
-		if !sourceTree.linesToShow.Has(lineNumber(i)){
+	for i, line := range st.lines {
+		if !st.linesToShow.Has(lineNumber(i)){
 			if !isGapPrinted {
 				output.WriteString("⋮\n")
 				isGapPrinted = true
@@ -252,7 +242,7 @@ func main() {
 
 		isGapPrinted = false
 		var spacer string
-		if linesOfInterest.Has(lineNumber(i)){
+		if st.linesOfInterest.Has(lineNumber(i)){
 			spacer = "█"
 		} else {
 			spacer = "│"
@@ -261,5 +251,19 @@ func main() {
 		output.WriteString(fmt.Sprintf("%s %s\n",  spacer, line.text))
 	}
 
-	print(output.String())
+	return output.String()
+}
+
+func main() {
+	sourceTree, err := NewSourceTree("./main.go")
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err = sourceTree.findLines("AI\\?"); err != nil {
+		panic(err)
+	}
+
+	sourceTree.addContext()
+	print(sourceTree.formatOutput())
 }
