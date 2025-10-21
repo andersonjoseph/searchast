@@ -14,23 +14,23 @@ import (
 
 type lineNumber = uint32
 
-type lineInfo struct {
+type line struct {
 	text string
-	parentLine lineNumber
-	scope scopeInfo
+	scope scope
 }
 
-type scopeInfo struct {
-	startLine lineNumber
-	endLine lineNumber
+type scope struct {
+	parent lineNumber
+	start lineNumber
+	end lineNumber
 }
 
-func (s scopeInfo) Size() uint32 {
-	return s.endLine - s.startLine
+func (s scope) Size() uint32 {
+	return s.end - s.start
 }
 
 type SourceTree struct {
-	lines []lineInfo
+	lines []line
 	linesToShow Set[lineNumber]
 	seenParents Set[lineNumber]
 }
@@ -38,7 +38,7 @@ type SourceTree struct {
 func NewSourceTree(sourceCode string) SourceTree {
 	sourceLines := strings.Split(string(sourceCode), "\n")
 
-	lines := make([]lineInfo, len(sourceLines))
+	lines := make([]line, len(sourceLines))
 	for i := range lines {
 		lines[i].text = sourceLines[i]
 	}
@@ -67,8 +67,8 @@ func (st *SourceTree) build(node *sitter.Node) {
 
 	// Explain the purpose of this function AI?
 	if nodeSize > 0 && (st.lines[startLine].scope.Size() == 0 || nodeSize > st.lines[startLine].scope.Size()) {
-		st.lines[startLine].scope.startLine = startLine
-		st.lines[startLine].scope.endLine = endLine
+		st.lines[startLine].scope.start = startLine
+		st.lines[startLine].scope.end = endLine
 	}
 
 	childCount := int(node.ChildCount())
@@ -77,8 +77,8 @@ func (st *SourceTree) build(node *sitter.Node) {
 		childLine := child.StartPoint().Row 
 
 		if startLine != childLine {
-			if st.lines[childLine].parentLine == 0 {
-				st.lines[childLine].parentLine = startLine
+			if st.lines[childLine].scope.parent == 0 {
+				st.lines[childLine].scope.parent = startLine
 			}
 		}
 
@@ -121,7 +121,7 @@ func (st *SourceTree) addContext(linesOfInterest Set[lineNumber]) {
 	for _, line := range linesSoFar {
 		lineInfo := st.lines[line]
 		if lineInfo.scope.Size() > 0 { // if a full scope is part of the lines, add the scope
-			for currentLine := lineInfo.scope.startLine; currentLine <= lineInfo.scope.endLine; currentLine++ {
+			for currentLine := lineInfo.scope.start; currentLine <= lineInfo.scope.end; currentLine++ {
 				st.linesToShow.Add(currentLine)
 			}
 		}
@@ -160,7 +160,7 @@ func (st *SourceTree) closeGaps() {
 }
 
 func (st *SourceTree) addParentContext(line lineNumber) {
-	parentLine := st.lines[line].parentLine
+	parentLine := st.lines[line].scope.parent
 	if st.seenParents.Has(parentLine) {
 		return
 	}
@@ -168,8 +168,8 @@ func (st *SourceTree) addParentContext(line lineNumber) {
 
 	parentLineInfo := st.lines[parentLine]
 
-	st.linesToShow.Add(parentLineInfo.scope.startLine)
-	st.linesToShow.Add(parentLineInfo.scope.endLine)
+	st.linesToShow.Add(parentLineInfo.scope.start)
+	st.linesToShow.Add(parentLineInfo.scope.end)
 
 	if parentLine == line {
 		return
@@ -186,16 +186,16 @@ func (st *SourceTree) addChildContext(line lineNumber) {
 	lineInfo := st.lines[line] 
 
 	 // FIXME: most of these parameters should be configurable
-	limitLine := min(lineNumber(3) + lineInfo.scope.startLine, lineInfo.scope.endLine)
-	threshold := lineInfo.scope.startLine + ((lineInfo.scope.Size() * 70) / 100)
+	limitLine := min(lineNumber(3) + lineInfo.scope.start, lineInfo.scope.end)
+	threshold := lineInfo.scope.start + ((lineInfo.scope.Size() * 70) / 100)
 
 	if limitLine > threshold {
-		limitLine = lineInfo.scope.endLine
+		limitLine = lineInfo.scope.end
 	}
 
-	for currentLine := lineInfo.scope.startLine; currentLine <= limitLine; currentLine++ {
+	for currentLine := lineInfo.scope.start; currentLine <= limitLine; currentLine++ {
 		st.linesToShow.Add(currentLine)
-		st.linesToShow.Add(st.lines[currentLine].scope.endLine)
+		st.linesToShow.Add(st.lines[currentLine].scope.end)
 	}
 }
 
