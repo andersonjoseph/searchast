@@ -1,3 +1,6 @@
+// Package findctx parses a source code file to build a tree structure representing
+// code scopes. It allows for searching specific patterns and understanding their
+// context within the code's hierarchy.
 package findctx
 
 import (
@@ -14,21 +17,25 @@ import (
 
 type lineNumber = uint32
 
+// line represents a single line in the source file, including its text and scope information.
 type line struct {
 	text  string
 	scope scope
 }
 
+// scope defines a block of code, linking it to a parent and tracking its start and end lines.
 type scope struct {
 	parent lineNumber
 	start  lineNumber
 	end    lineNumber
 }
 
+// size calculates the number of lines contained within a scope.
 func (s scope) size() uint32 {
 	return s.end - s.start
 }
 
+// children returns an iterator sequence for all line numbers within a scope.
 func (s scope) children() iter.Seq[lineNumber] {
 	return func(yield func(lineNumber) bool) {
 		for currentChild := s.start; currentChild <= s.end; currentChild++ {
@@ -39,10 +46,13 @@ func (s scope) children() iter.Seq[lineNumber] {
 	}
 }
 
+// sourceTree holds the entire parsed source file, line by line, with scope annotations.
 type sourceTree struct {
 	lines []line
 }
 
+// NewSourceTree reads a source file, parses it,
+// and constructs a new sourceTree.
 func NewSourceTree(filename string) (*sourceTree, error) {
 	sourceCode, err := os.ReadFile(filename)
 	if err != nil {
@@ -75,6 +85,8 @@ func NewSourceTree(filename string) (*sourceTree, error) {
 	return st, nil
 }
 
+// build recursively traverses the tree-sitter abstract syntax tree (AST)
+// to populate the scope information for each line.
 func (st *sourceTree) build(node *sitter.Node) {
 	if !node.IsNamed() {
 		for i := range node.ChildCount() {
@@ -109,6 +121,8 @@ func (st *sourceTree) build(node *sitter.Node) {
 	}
 }
 
+// Search finds all lines that match a given regular expression pattern and returns
+// their line numbers.
 func (st *sourceTree) Search(pattern string) (set[lineNumber], error) {
 	linesOfInterest := newSet[lineNumber]()
 	re, err := regexp.Compile(pattern)

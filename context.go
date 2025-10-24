@@ -4,25 +4,33 @@ import (
 	"slices"
 )
 
-
+// ContextBuilder constructs a set of line numbers to display based on an initial
+// set of lines. It expands this set by including parent and child
+// scopes, surrounding lines, and by closing small gaps to create a more
+// readable and contextual output.
 type ContextBuilder struct {
-	GapToShow        lineNumber
-	GapToClose       lineNumber
-	ParentContext    bool
-	ChildContext     bool
-	SurroundingLines bool
+	// SurroundingLines specifies how many lines of context to show around a matched line.
+	SurroundingLines lineNumber
+	// GapToClose determines the maximum gap size between two lines that should be filled in.
+	GapToClose lineNumber
+	// ParentContext, if true, includes the start and end lines of parent scopes.
+	ParentContext bool
+	// ChildContext, if true, includes the beginning of any child scopes.
+	ChildContext bool
 
 	seenParents set[lineNumber]
 	linesToShow set[lineNumber]
 }
 
+// NewContextBuilder creates a new ContextBuilder with default values, which can be
+// customized by passing in functional options.
 func NewContextBuilder(opts ...Option) *ContextBuilder {
 	cb := &ContextBuilder{
-		GapToShow:        3,
+		SurroundingLines: 3,
 		GapToClose:       3,
 		ParentContext:    true,
 		ChildContext:     true,
-		SurroundingLines: true,
+
 		seenParents:      newSet[lineNumber](),
 		linesToShow:      newSet[lineNumber](),
 	}
@@ -34,25 +42,21 @@ func NewContextBuilder(opts ...Option) *ContextBuilder {
 	return cb
 }
 
+// AddContext takes a sourceTree and a set of lines of interest and returns an
+// expanded set of lines based on the builder's configuration. The builder's
+// internal state is reset after each call
 func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNumber]) set[lineNumber] {
 	defer func() {
 		cb.linesToShow.clear()
 		cb.seenParents.clear()
 	}()
 
-	// Add initial lines of interest, with or without surrounding lines
-	if cb.SurroundingLines {
-		cb.addSurroundingLines(st, linesOfInterest)
-	} else {
-		for line := range linesOfInterest {
-			cb.linesToShow.add(line)
-		}
-	}
+	cb.addSurroundingLines(st, linesOfInterest)
 
+	// If the initial lines or their surroundings are part of a scope, include that entire scope.
 	linesSoFar := cb.linesToShow.toSlice()
 	for _, line := range linesSoFar {
 		lineInfo := st.lines[line]
-		// if the linesOfInterest and their surrounding lines contains scopes, add them
 		for childLine := range lineInfo.scope.children() {
 			cb.linesToShow.add(childLine)
 		}
@@ -77,8 +81,10 @@ func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNum
 	return cb.linesToShow
 }
 
+// addSurroundingLines expands the set of lines to show by including a
+// specified number of lines before and after each line of interest.
 func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest set[lineNumber]) {
-	gap := cb.GapToShow
+	gap := cb.SurroundingLines
 
 	for line := range linesOfInterest {
 		for currentLine := line - gap; currentLine <= line+gap; currentLine++ {
@@ -109,6 +115,9 @@ func (cb *ContextBuilder) addParentContext(st *sourceTree, line lineNumber) {
 	cb.addParentContext(st, parentLine)
 }
 
+// addChildContext adds the context of child scopes. It uses a heuristic to
+// show only the beginning of large child scopes to avoid excessive output,
+// but shows the full scope if it's small.
 func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 	if line == 0 || st.lines[line].scope.size() == 0 {
 		return
@@ -116,9 +125,10 @@ func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 
 	lineInfo := st.lines[line]
 
-	limitLine := min(cb.GapToShow+lineInfo.scope.start, lineInfo.scope.end)
-	threshold := lineInfo.scope.start + ((lineInfo.scope.size() * 70) / 100)
+	limitLine := min(cb.SurroundingLines+lineInfo.scope.start, lineInfo.scope.end)
 
+	// If showing the initial gap would cover over 70% of the scope, just show the whole thing.
+	threshold := lineInfo.scope.start + ((lineInfo.scope.size() * 70) / 100)
 	if limitLine > threshold {
 		limitLine = lineInfo.scope.end
 	}
@@ -129,6 +139,8 @@ func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 	}
 }
 
+// closeGaps finds small gaps between lines in the current set and adds the
+// missing lines to create a more contiguous block of code.
 func (cb *ContextBuilder) closeGaps() {
 	sortedLines := cb.linesToShow.toSlice()
 	slices.Sort(sortedLines)
@@ -149,14 +161,7 @@ func (cb *ContextBuilder) closeGaps() {
 
 type Option func(*ContextBuilder)
 
-// WithGapToShow sets the number of lines to show around a line of interest.
-func WithGapToShow(gap lineNumber) Option {
-	return func(cb *ContextBuilder) {
-		cb.GapToShow = gap
-	}
-}
-
-// WithGapToClose sets the maximum gap between lines to fill in.
+// WithGapToClose sets the maximum gap between lines that should be filled in.
 func WithGapToClose(gap lineNumber) Option {
 	return func(cb *ContextBuilder) {
 		cb.GapToClose = gap
@@ -178,8 +183,8 @@ func WithChildContext(enabled bool) Option {
 }
 
 // WithSurroundingLines enables or disables the inclusion of surrounding lines.
-func WithSurroundingLines(enabled bool) Option {
+func WithSurroundingLines(lines lineNumber) Option {
 	return func(cb *ContextBuilder) {
-		cb.SurroundingLines = enabled
+		cb.SurroundingLines = lines
 	}
 }
