@@ -44,7 +44,26 @@ type SourceTree struct {
 	lines []line
 	linesOfInterest Set[lineNumber]
 	linesToShow Set[lineNumber]
-	seenParents Set[lineNumber]
+}
+
+type ContextBuilder struct {
+	GapToShow        lineNumber
+	GapToClose       lineNumber
+	ParentContext    bool
+	ChildContext     bool
+	SurroundingLines bool
+	seenParents      Set[lineNumber]
+}
+
+func NewContextBuilder() *ContextBuilder {
+	return &ContextBuilder{
+		GapToShow:        3,
+		GapToClose:       3,
+		ParentContext:    true,
+		ChildContext:     true,
+		SurroundingLines: true,
+		seenParents:      NewSet[lineNumber](),
+	}
 }
 
 func NewSourceTree(filename string) (SourceTree, error) {
@@ -74,7 +93,6 @@ func NewSourceTree(filename string) (SourceTree, error) {
 		lines: lines,
 		linesToShow: NewSet[lineNumber](),
 		linesOfInterest: NewSet[lineNumber](),
-		seenParents: NewSet[lineNumber](),
 	}
 
 	st.build(root)
@@ -117,7 +135,6 @@ func (st *SourceTree) build(node *sitter.Node) {
 }
 
 func (st *SourceTree) findLines(pattern string) (Set[lineNumber], error) {
-
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile regex pattern: %w", err)
@@ -132,10 +149,10 @@ func (st *SourceTree) findLines(pattern string) (Set[lineNumber], error) {
 	return st.linesOfInterest, nil
 }
 
-func (st *SourceTree) addContext() {
+func (cb *ContextBuilder) AddContext(st *SourceTree) {
 	// add some surrounding lines as lines of interest
 	for line := range st.linesOfInterest {
-		gap := lineNumber(3)//FIXME: this should be a parameter
+		gap := cb.GapToShow
 
 		for currentLine := line - gap; currentLine <= line + gap; currentLine++ {
 			if currentLine >= lineNumber(len(st.lines)) {
@@ -156,42 +173,23 @@ func (st *SourceTree) addContext() {
 
 	linesSoFar = st.linesToShow.ToSlice()
 	for _, line := range linesSoFar {
-		st.addParentContext(line)
+		cb.addParentContext(st, line)
 	}
 
 	linesSoFar = st.linesToShow.ToSlice()
 	for _, line := range linesSoFar {
-		st.addChildContext(line)
+		cb.addChildContext(st, line)
 	}
 
-	st.closeGaps()
+	cb.closeGaps(st)
 }
 
-func (st *SourceTree) closeGaps() {
-	sortedLines := st.linesToShow.ToSlice()
-	slices.Sort(sortedLines)
-
-	gapToClose := lineNumber(3)//FIXME: this should be a parameter too
-	for i := range sortedLines {
-		if i == len(sortedLines)-1 {
-			continue
-		}
-
-		diff := sortedLines[i+1] - sortedLines[i]
-		if diff <= lineNumber(gapToClose) {
-			for currentLine := sortedLines[i] + 1; currentLine <= sortedLines[i+1]; currentLine++ {
-				st.linesToShow.Add(currentLine)
-			}
-		}
-	}
-}
-
-func (st *SourceTree) addParentContext(line lineNumber) {
+func (cb *ContextBuilder) addParentContext(st *SourceTree, line lineNumber) {
 	parentLine := st.lines[line].scope.parent
-	if st.seenParents.Has(parentLine) {
+	if cb.seenParents.Has(parentLine) {
 		return
 	}
-	st.seenParents.Add(parentLine)
+	cb.seenParents.Add(parentLine)
 
 	parentLineInfo := st.lines[parentLine]
 
@@ -202,18 +200,17 @@ func (st *SourceTree) addParentContext(line lineNumber) {
 		return
 	}
 
-	st.addParentContext(parentLine)
+	cb.addParentContext(st, parentLine)
 }
 
-func (st *SourceTree) addChildContext(line lineNumber) {
+func (cb *ContextBuilder) addChildContext(st *SourceTree, line lineNumber) {
 	if line == 0 || st.lines[line].scope.Size() == 0 {
 		return
 	}
 
-	lineInfo := st.lines[line] 
+	lineInfo := st.lines[line]
 
-	 // FIXME: most of these parameters should be configurable
-	limitLine := min(lineNumber(3) + lineInfo.scope.start, lineInfo.scope.end)
+	limitLine := min(cb.GapToShow + lineInfo.scope.start, lineInfo.scope.end)
 	threshold := lineInfo.scope.start + ((lineInfo.scope.Size() * 70) / 100)
 
 	if limitLine > threshold {
@@ -223,6 +220,24 @@ func (st *SourceTree) addChildContext(line lineNumber) {
 	for currentLine := lineInfo.scope.start; currentLine <= limitLine; currentLine++ {
 		st.linesToShow.Add(currentLine)
 		st.linesToShow.Add(st.lines[currentLine].scope.end)
+	}
+}
+
+func (cb *ContextBuilder) closeGaps(st *SourceTree) {
+	sortedLines := st.linesToShow.ToSlice()
+	slices.Sort(sortedLines)
+
+	for i := range sortedLines {
+		if i == len(sortedLines)-1 {
+			continue
+		}
+
+		diff := sortedLines[i+1] - sortedLines[i]
+		if diff <= cb.GapToClose {
+			for currentLine := sortedLines[i] + 1; currentLine <= sortedLines[i+1]; currentLine++ {
+				st.linesToShow.Add(currentLine)
+			}
+		}
 	}
 }
 
@@ -264,6 +279,7 @@ func main() {
 		panic(err)
 	}
 
-	sourceTree.addContext()
+	contextBuilder := NewContextBuilder()
+	contextBuilder.AddContext(&sourceTree)
 	print(sourceTree.formatOutput())
 }
