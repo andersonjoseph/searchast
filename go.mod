@@ -1,4 +1,4 @@
-module github.com/andersonjoseph/go-grep-ast
+module github.com/andersonjoseph/findctx
 
 go 1.24.6
 

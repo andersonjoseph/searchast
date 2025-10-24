@@ -1,4 +1,4 @@
-package main
+package findctx
 
 import (
 	"slices"
@@ -11,8 +11,8 @@ type ContextBuilder struct {
 	ChildContext     bool
 	SurroundingLines bool
 
-	seenParents Set[lineNumber]
-	linesToShow Set[lineNumber]
+	seenParents set[lineNumber]
+	linesToShow set[lineNumber]
 }
 
 func NewContextBuilder() *ContextBuilder {
@@ -22,34 +22,34 @@ func NewContextBuilder() *ContextBuilder {
 		ParentContext:    true,
 		ChildContext:     true,
 		SurroundingLines: true,
-		seenParents:      NewSet[lineNumber](),
-		linesToShow:      NewSet[lineNumber](),
+		seenParents:      newSet[lineNumber](),
+		linesToShow:      newSet[lineNumber](),
 	}
 }
 
-func (cb *ContextBuilder) AddContext(st *SourceTree, linesOfInterest Set[lineNumber]) Set[lineNumber] {
+func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNumber]) set[lineNumber] {
 	defer func() {
-		cb.linesToShow.Clear()
-		cb.seenParents.Clear()
+		cb.linesToShow.clear()
+		cb.seenParents.clear()
 	}()
 
 	cb.addSurroundingLines(st, linesOfInterest)
-	linesSoFar := cb.linesToShow.ToSlice()
+	linesSoFar := cb.linesToShow.toSlice()
 
 	for _, line := range linesSoFar {
 		lineInfo := st.lines[line]
 		// if the linesOfInterest and their surrounding lines contains scopes, add them
-		for childLine := range lineInfo.scope.Children() {
-			cb.linesToShow.Add(childLine)
+		for childLine := range lineInfo.scope.children() {
+			cb.linesToShow.add(childLine)
 		}
 	}
 
-	linesSoFar = cb.linesToShow.ToSlice()
+	linesSoFar = cb.linesToShow.toSlice()
 	for _, line := range linesSoFar {
 		cb.addParentContext(st, line)
 	}
 
-	linesSoFar = cb.linesToShow.ToSlice()
+	linesSoFar = cb.linesToShow.toSlice()
 	for _, line := range linesSoFar {
 		cb.addChildContext(st, line)
 	}
@@ -59,7 +59,7 @@ func (cb *ContextBuilder) AddContext(st *SourceTree, linesOfInterest Set[lineNum
 	return cb.linesToShow
 }
 
-func (cb *ContextBuilder) addSurroundingLines(st *SourceTree, linesOfInterest Set[lineNumber]) {
+func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest set[lineNumber]) {
 	gap := cb.GapToShow
 
 	for line := range linesOfInterest {
@@ -67,22 +67,22 @@ func (cb *ContextBuilder) addSurroundingLines(st *SourceTree, linesOfInterest Se
 			if currentLine >= lineNumber(len(st.lines)) {
 				break
 			}
-			cb.linesToShow.Add(currentLine)
+			cb.linesToShow.add(currentLine)
 		}
 	}
 }
 
-func (cb *ContextBuilder) addParentContext(st *SourceTree, line lineNumber) {
+func (cb *ContextBuilder) addParentContext(st *sourceTree, line lineNumber) {
 	parentLine := st.lines[line].scope.parent
-	if cb.seenParents.Has(parentLine) {
+	if cb.seenParents.has(parentLine) {
 		return
 	}
-	cb.seenParents.Add(parentLine)
+	cb.seenParents.add(parentLine)
 
 	parentLineInfo := st.lines[parentLine]
 
-	cb.linesToShow.Add(parentLineInfo.scope.start)
-	cb.linesToShow.Add(parentLineInfo.scope.end)
+	cb.linesToShow.add(parentLineInfo.scope.start)
+	cb.linesToShow.add(parentLineInfo.scope.end)
 
 	if parentLine == line {
 		return
@@ -91,28 +91,28 @@ func (cb *ContextBuilder) addParentContext(st *SourceTree, line lineNumber) {
 	cb.addParentContext(st, parentLine)
 }
 
-func (cb *ContextBuilder) addChildContext(st *SourceTree, line lineNumber) {
-	if line == 0 || st.lines[line].scope.Size() == 0 {
+func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
+	if line == 0 || st.lines[line].scope.size() == 0 {
 		return
 	}
 
 	lineInfo := st.lines[line]
 
 	limitLine := min(cb.GapToShow+lineInfo.scope.start, lineInfo.scope.end)
-	threshold := lineInfo.scope.start + ((lineInfo.scope.Size() * 70) / 100)
+	threshold := lineInfo.scope.start + ((lineInfo.scope.size() * 70) / 100)
 
 	if limitLine > threshold {
 		limitLine = lineInfo.scope.end
 	}
 
 	for currentLine := lineInfo.scope.start; currentLine <= limitLine; currentLine++ {
-		cb.linesToShow.Add(currentLine)
-		cb.linesToShow.Add(st.lines[currentLine].scope.end)
+		cb.linesToShow.add(currentLine)
+		cb.linesToShow.add(st.lines[currentLine].scope.end)
 	}
 }
 
 func (cb *ContextBuilder) closeGaps() {
-	sortedLines := cb.linesToShow.ToSlice()
+	sortedLines := cb.linesToShow.toSlice()
 	slices.Sort(sortedLines)
 
 	for i := range sortedLines {
@@ -123,7 +123,7 @@ func (cb *ContextBuilder) closeGaps() {
 		diff := sortedLines[i+1] - sortedLines[i]
 		if diff <= cb.GapToClose {
 			for currentLine := sortedLines[i] + 1; currentLine <= sortedLines[i+1]; currentLine++ {
-				cb.linesToShow.Add(currentLine)
+				cb.linesToShow.add(currentLine)
 			}
 		}
 	}

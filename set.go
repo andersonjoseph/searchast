@@ -1,25 +1,25 @@
-package main
+package findctx
 
-type Set[T comparable] map[T]struct{}
+type set[T comparable] map[T]struct{}
 
-func NewSet[T comparable]() Set[T] {
-	return make(Set[T])
+func newSet[T comparable]() set[T] {
+	return make(set[T])
 }
 
-func (s Set[T]) Add(v T) {
+func (s set[T]) add(v T) {
 	s[v] = struct{}{}
 }
 
-func (s Set[T]) Remove(v T) {
+func (s set[T]) remove(v T) {
 	delete(s, v)
 }
 
-func (s Set[T]) Has(v T) bool {
+func (s set[T]) has(v T) bool {
 	_, ok := s[v]
 	return ok
 }
 
-func (s Set[T]) ToSlice() []T {
+func (s set[T]) toSlice() []T {
 	x := make([]T, 0, len(s))
 	for e := range s {
 		x = append(x, e)
@@ -28,6 +28,6 @@ func (s Set[T]) ToSlice() []T {
 	return x
 }
 
-func (s *Set[T]) Clear() {
-	*s = make(Set[T])
+func (s *set[T]) clear() {
+	*s = make(set[T])
 }
