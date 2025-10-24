@@ -28,3 +28,6 @@ func (s Set[T]) ToSlice() []T {
 	return x
 }
 
+func (s *Set[T]) Clear() {
+	*s = make(Set[T])
+}
