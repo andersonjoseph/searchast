@@ -4,6 +4,7 @@ import (
 	"slices"
 )
 
+
 type ContextBuilder struct {
 	GapToShow        lineNumber
 	GapToClose       lineNumber
@@ -15,8 +16,8 @@ type ContextBuilder struct {
 	linesToShow set[lineNumber]
 }
 
-func NewContextBuilder() *ContextBuilder {
-	return &ContextBuilder{
+func NewContextBuilder(opts ...Option) *ContextBuilder {
+	cb := &ContextBuilder{
 		GapToShow:        3,
 		GapToClose:       3,
 		ParentContext:    true,
@@ -25,6 +26,12 @@ func NewContextBuilder() *ContextBuilder {
 		seenParents:      newSet[lineNumber](),
 		linesToShow:      newSet[lineNumber](),
 	}
+
+	for _, opt := range opts {
+		opt(cb)
+	}
+
+	return cb
 }
 
 func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNumber]) set[lineNumber] {
@@ -33,9 +40,16 @@ func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNum
 		cb.seenParents.clear()
 	}()
 
-	cb.addSurroundingLines(st, linesOfInterest)
-	linesSoFar := cb.linesToShow.toSlice()
+	// Add initial lines of interest, with or without surrounding lines
+	if cb.SurroundingLines {
+		cb.addSurroundingLines(st, linesOfInterest)
+	} else {
+		for line := range linesOfInterest {
+			cb.linesToShow.add(line)
+		}
+	}
 
+	linesSoFar := cb.linesToShow.toSlice()
 	for _, line := range linesSoFar {
 		lineInfo := st.lines[line]
 		// if the linesOfInterest and their surrounding lines contains scopes, add them
@@ -44,14 +58,18 @@ func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest set[lineNum
 		}
 	}
 
-	linesSoFar = cb.linesToShow.toSlice()
-	for _, line := range linesSoFar {
-		cb.addParentContext(st, line)
+	if cb.ParentContext {
+		linesSoFar = cb.linesToShow.toSlice()
+		for _, line := range linesSoFar {
+			cb.addParentContext(st, line)
+		}
 	}
 
-	linesSoFar = cb.linesToShow.toSlice()
-	for _, line := range linesSoFar {
-		cb.addChildContext(st, line)
+	if cb.ChildContext {
+		linesSoFar = cb.linesToShow.toSlice()
+		for _, line := range linesSoFar {
+			cb.addChildContext(st, line)
+		}
 	}
 
 	cb.closeGaps()
@@ -126,5 +144,42 @@ func (cb *ContextBuilder) closeGaps() {
 				cb.linesToShow.add(currentLine)
 			}
 		}
+	}
+}
+
+type Option func(*ContextBuilder)
+
+// WithGapToShow sets the number of lines to show around a line of interest.
+func WithGapToShow(gap lineNumber) Option {
+	return func(cb *ContextBuilder) {
+		cb.GapToShow = gap
+	}
+}
+
+// WithGapToClose sets the maximum gap between lines to fill in.
+func WithGapToClose(gap lineNumber) Option {
+	return func(cb *ContextBuilder) {
+		cb.GapToClose = gap
+	}
+}
+
+// WithParentContext enables or disables the inclusion of parent context.
+func WithParentContext(enabled bool) Option {
+	return func(cb *ContextBuilder) {
+		cb.ParentContext = enabled
+	}
+}
+
+// WithChildContext enables or disables the inclusion of child context.
+func WithChildContext(enabled bool) Option {
+	return func(cb *ContextBuilder) {
+		cb.ChildContext = enabled
+	}
+}
+
+// WithSurroundingLines enables or disables the inclusion of surrounding lines.
+func WithSurroundingLines(enabled bool) Option {
+	return func(cb *ContextBuilder) {
+		cb.SurroundingLines = enabled
 	}
 }
