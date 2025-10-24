@@ -1,18 +1,50 @@
 package main
 
-import "github.com/andersonjoseph/findctx"
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/andersonjoseph/findctx"
+)
 
 func main() {
-	sourceTree, err := findctx.NewSourceTree("./sourcetree.go")
-	if err != nil {
-		panic(err)
+	var filename string
+	var pattern string
+
+	flag.StringVar(&filename, "filename", "", "Source code file to search (required)")
+	flag.StringVar(&pattern, "pattern", "", "Search pattern to find (required)")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "Example: %s -filename sourcetree.go -pattern 'AI\\\\?'\n", os.Args[0])
 	}
 
-	linesOfInterest, err := sourceTree.Search("AI\\?")
-	if err != nil {
-		panic(err)
+	flag.Parse()
+
+	if filename == "" || pattern == "" {
+		flag.Usage()
+		os.Exit(1)
 	}
+
+	sourceTree, err := findctx.NewSourceTree(filename)
+	if err != nil {
+		log.Fatalf("Error opening source file '%s': %v", filename, err)
+	}
+
+	linesOfInterest, err := sourceTree.Search(pattern)
+	if err != nil {
+		log.Fatalf("Error searching for pattern '%s': %v", pattern, err)
+	}
+
+	if len(linesOfInterest) == 0 {
+		fmt.Println("No matches found.")
+		return
+	}
+
 	linesToShow := findctx.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
-
-	print(findctx.FormatOutput(sourceTree, linesToShow, linesOfInterest))
+	output := findctx.FormatOutput(sourceTree, linesToShow, linesOfInterest)
+	fmt.Print(output)
 }
