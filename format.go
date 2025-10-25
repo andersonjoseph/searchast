@@ -2,10 +2,11 @@ package findctx
 
 import (
 	"fmt"
+	"github.com/andersonjoseph/findctx/internal"
 	"strings"
 )
 
-func FormatOutput(st *sourceTree, linesToShow set[lineNumber], linesOfInterest set[lineNumber]) string {
+func FormatOutput(st *sourceTree, linesToShow internal.Set[lineNumber], linesOfInterest internal.Set[lineNumber]) string {
 	if len(linesOfInterest) == 0 {
 		return ""
 	}
@@ -14,7 +15,7 @@ func FormatOutput(st *sourceTree, linesToShow set[lineNumber], linesOfInterest s
 	isGapPrinted := false
 
 	for i, line := range st.lines {
-		if !linesToShow.has(lineNumber(i)) {
+		if !linesToShow.Has(lineNumber(i)) {
 			if !isGapPrinted {
 				output.WriteString("⋮\n")
 				isGapPrinted = true
@@ -25,7 +26,7 @@ func FormatOutput(st *sourceTree, linesToShow set[lineNumber], linesOfInterest s
 
 		isGapPrinted = false
 		var spacer string
-		if linesOfInterest.has(lineNumber(i)) {
+		if linesOfInterest.Has(lineNumber(i)) {
 			spacer = "█"
 		} else {
 			spacer = "│"

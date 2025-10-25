@@ -11,8 +11,9 @@ import (
 	"regexp"
 	"strings"
 
-	sitter "github.com/smacker/go-tree-sitter"
+	"github.com/andersonjoseph/findctx/internal"
 	"github.com/andersonjoseph/findctx/internal/language"
+	sitter "github.com/smacker/go-tree-sitter"
 )
 
 type lineNumber = uint32
@@ -121,8 +122,8 @@ func (st *sourceTree) build(node *sitter.Node) {
 
 // Search finds all lines that match a given regular expression pattern and returns
 // their line numbers.
-func (st *sourceTree) Search(pattern string) (set[lineNumber], error) {
-	linesOfInterest := newSet[lineNumber]()
+func (st *sourceTree) Search(pattern string) (internal.Set[lineNumber], error) {
+	linesOfInterest := internal.NewSet[lineNumber]()
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile regex pattern: %w", err)
@@ -130,7 +131,7 @@ func (st *sourceTree) Search(pattern string) (set[lineNumber], error) {
 
 	for i, line := range st.lines {
 		if re.MatchString(line.text) {
-			linesOfInterest.add(lineNumber(i))
+			linesOfInterest.Add(lineNumber(i))
 		}
 	}
 
