@@ -2,4 +2,45 @@ module github.com/andersonjoseph/findctx
 
 go 1.24.6
 
-require github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
+require (
+	github.com/alexaandru/go-sitter-forest/ada v1.9.0
+	github.com/alexaandru/go-sitter-forest/asm v1.9.1
+	github.com/alexaandru/go-sitter-forest/bash v1.9.6
+	github.com/alexaandru/go-sitter-forest/c v1.9.4
+	github.com/alexaandru/go-sitter-forest/c_sharp v1.9.6
+	github.com/alexaandru/go-sitter-forest/cobol v1.9.1
+	github.com/alexaandru/go-sitter-forest/commonlisp v1.9.1
+	github.com/alexaandru/go-sitter-forest/cpp v1.9.5
+	github.com/alexaandru/go-sitter-forest/css v1.9.4
+	github.com/alexaandru/go-sitter-forest/dart v1.9.4
+	github.com/alexaandru/go-sitter-forest/elixir v1.9.5
+	github.com/alexaandru/go-sitter-forest/erlang v1.9.7
+	github.com/alexaandru/go-sitter-forest/fortran v1.9.13
+	github.com/alexaandru/go-sitter-forest/fsharp v1.9.3
+	github.com/alexaandru/go-sitter-forest/gdscript v1.9.6
+	github.com/alexaandru/go-sitter-forest/gleam v1.9.9
+	github.com/alexaandru/go-sitter-forest/go v1.9.4
+	github.com/alexaandru/go-sitter-forest/groovy v1.9.4
+	github.com/alexaandru/go-sitter-forest/html v1.9.1
+	github.com/alexaandru/go-sitter-forest/java v1.9.5
+	github.com/alexaandru/go-sitter-forest/javascript v1.9.2
+	github.com/alexaandru/go-sitter-forest/kotlin v1.9.4
+	github.com/alexaandru/go-sitter-forest/lua v1.9.3
+	github.com/alexaandru/go-sitter-forest/matlab v1.9.4
+	github.com/alexaandru/go-sitter-forest/ocaml v1.9.6
+	github.com/alexaandru/go-sitter-forest/pascal v1.9.2
+	github.com/alexaandru/go-sitter-forest/perl v1.9.9
+	github.com/alexaandru/go-sitter-forest/php v1.9.5
+	github.com/alexaandru/go-sitter-forest/powershell v1.9.5
+	github.com/alexaandru/go-sitter-forest/prolog v1.9.1
+	github.com/alexaandru/go-sitter-forest/python v1.9.10
+	github.com/alexaandru/go-sitter-forest/r v1.9.6
+	github.com/alexaandru/go-sitter-forest/ruby v1.9.3
+	github.com/alexaandru/go-sitter-forest/rust v1.9.13
+	github.com/alexaandru/go-sitter-forest/scala v1.9.8
+	github.com/alexaandru/go-sitter-forest/sql v1.9.13
+	github.com/alexaandru/go-sitter-forest/swift v1.9.5
+	github.com/alexaandru/go-sitter-forest/typescript v1.9.4
+	github.com/alexaandru/go-sitter-forest/zig v1.9.4
+	github.com/smacker/go-tree-sitter v0.0.0-20240827094217-dd81d9e9be82
+)
