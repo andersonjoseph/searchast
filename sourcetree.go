@@ -6,8 +6,8 @@ package findctx
 import (
 	"context"
 	"fmt"
+	"io"
 	"iter"
-	"os"
 	"regexp"
 	"strings"
 
@@ -54,8 +54,8 @@ type sourceTree struct {
 
 // NewSourceTree reads a source file, parses it,
 // and constructs a new sourceTree.
-func NewSourceTree(filename string) (*sourceTree, error) {
-	sourceCode, err := os.ReadFile(filename)
+func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
+	sourceCode, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
 	}
@@ -65,7 +65,7 @@ func NewSourceTree(filename string) (*sourceTree, error) {
 
 	tree, err := parser.ParseCtx(context.Background(), nil, sourceCode)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("failed to parse file %s: %w", filename, err)
 	}
 	root := tree.RootNode()
 

@@ -29,7 +29,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	sourceTree, err := findctx.NewSourceTree(filename)
+	f, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("Error opening source file '%s': %v", filename, err)
+	}
+	defer f.Close()
+
+	sourceTree, err := findctx.NewSourceTree(f, filename)
 	if err != nil {
 		log.Fatalf("Error opening source file '%s': %v", filename, err)
 	}
