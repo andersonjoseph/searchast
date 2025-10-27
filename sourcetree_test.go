@@ -130,7 +130,7 @@ func main() {
 		},
 		{
 			name:      "returns an error for an invalid regex",
-			pattern:   `[`, // Invalid regex
+			pattern:   `[`,
 			expectErr: true,
 		},
 	}

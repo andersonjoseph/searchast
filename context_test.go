@@ -8,6 +8,16 @@ import (
 	"github.com/andersonjoseph/findctx/internal"
 )
 
+func mustNewSourceTree(t *testing.T, source string) *sourceTree {
+	t.Helper()
+	r := strings.NewReader(source)
+	st, err := NewSourceTree(r, "test.go")
+	if err != nil {
+		t.Fatalf("failed to create sourceTree: %v", err)
+	}
+	return st
+}
+
 func TestNewContextBuilder(t *testing.T) {
 	t.Run("creates with default values", func(t *testing.T) {
 		cb := NewContextBuilder()
@@ -61,8 +71,8 @@ func main() { // 6
 		fmt.Println("target") // 8
 	} // 9
 } // 10`
-	st := MustNewSourceTree(t, source)
-	cb := NewContextBuilder() // Using default settings
+	st := mustNewSourceTree(t, source)
+	cb := NewContextBuilder()
 
 	// The target line is 8.
 	// Defaults: Surrounding=3, Gaps=3, Parents=true, Children=true
@@ -93,7 +103,7 @@ func main() { // 2
 	// 10
 } // 11
 `
-	st := MustNewSourceTree(t, source)
+	st := mustNewSourceTree(t, source)
 
 	testCases := []struct {
 		name          string
@@ -158,7 +168,7 @@ func main() { // 2
 	// 3
 } // 4
 // 5`
-	st := MustNewSourceTree(t, source)
+	st := mustNewSourceTree(t, source)
 	cb := NewContextBuilder(WithSurroundingLines(1)) // smaller surrounding for predictability
 
 	t.Run("line of interest at start of file", func(t *testing.T) {
@@ -190,7 +200,7 @@ func second() { // 5
 	// target 2 // 6
 } // 7
 `
-	st := MustNewSourceTree(t, source)
+	st := mustNewSourceTree(t, source)
 	cb := NewContextBuilder(WithSurroundingLines(0), WithParentContext(true))
 
 	// First call
@@ -212,16 +222,4 @@ func second() { // 5
 		t.Errorf("second call produced incorrect result, indicating state was not reset.\nexpected: %v\n     got: %v",
 			expectedSecond.ToSlice(), actualSecond.ToSlice())
 	}
-}
-
-// mustNewSourceTree is a test helper to reduce boilerplate. It fails the test
-// immediately if the sourceTree cannot be created.
-func MustNewSourceTree(t *testing.T, source string) *sourceTree {
-	t.Helper()
-	r := strings.NewReader(source)
-	st, err := NewSourceTree(r, "test.go")
-	if err != nil {
-		t.Fatalf("failed to create sourceTree: %v", err)
-	}
-	return st
 }
