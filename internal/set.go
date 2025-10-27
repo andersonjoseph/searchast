@@ -6,6 +6,15 @@ func NewSet[T comparable]() Set[T] {
 	return make(Set[T])
 }
 
+func NewSetFromSlice[T comparable](s []T) Set[T] {
+	set := make(Set[T])
+	for _, v := range s {
+		set[v] = struct{}{}
+	}
+
+	return set
+}
+
 func (s Set[T]) Add(v T) {
 	s[v] = struct{}{}
 }

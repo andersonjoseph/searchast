@@ -33,7 +33,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening source file '%s': %v", filename, err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalf("Error closing file '%s': %v", filename, err)
+		}
+	}()
 
 	sourceTree, err := findctx.NewSourceTree(f, filename)
 	if err != nil {

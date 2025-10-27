@@ -1,0 +1,65 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  build:
+    desc: Build the main executable
+    cmds:
+      - go build .
+  
+  run:
+    desc: Run the program directly
+    cmds:
+      - go run ./cmd/findctx {{.CLI_ARGS}}
+  
+  test:
+    desc: Run all tests
+    cmds:
+      - go test ./...
+  
+  test-verbose:
+    desc: Run tests with verbose output
+    cmds:
+      - go test -v ./...
+  
+  test-watch:
+    desc: Run tests in watch mode
+    cmds:
+      - watchexec -r go test ./...
+  
+  fmt:
+    desc: Format Go code
+    cmds:
+      - go fmt ./...
+  
+  fmt-check:
+    desc: Check if Go code is formatted
+    cmds:
+      - go fmt -l ./...
+  
+  vet:
+    desc: Run go vet to check for issues
+    cmds:
+      - go vet ./...
+  
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run
+  
+  check:
+    desc: Run all checks (format, vet, lint)
+    deps:
+      - fmt
+      - vet
+      - lint
+  
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - go clean -cache
+      - rm -f ./repo

@@ -52,8 +52,8 @@ type sourceTree struct {
 	lines []line
 }
 
-// NewSourceTree reads a source file, parses it,
-// and constructs a new sourceTree.
+// NewSourceTree costructs a new sourceTree from a reader and filename.
+// the filename is used to determine the language to parse the source code in.
 func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
 	sourceCode, err := io.ReadAll(r)
 	if err != nil {
@@ -88,9 +88,11 @@ func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
 // build recursively traverses the tree-sitter abstract syntax tree (AST)
 // to populate the scope information for each line.
 func (st *sourceTree) build(node *sitter.Node) {
-	if !node.IsNamed() {
-		for i := range node.ChildCount() {
-			st.build(node.Child(int(i)))
+	childCount := int(node.ChildCount())
+
+	if !node.IsNamed() { // If the node is not named, it is a leaf node and has no scope information.
+		for i := range childCount {
+			st.build(node.Child(i))
 		}
 		return
 	}
@@ -105,7 +107,6 @@ func (st *sourceTree) build(node *sitter.Node) {
 		st.lines[startLine].scope.end = endLine
 	}
 
-	childCount := int(node.ChildCount())
 	for i := range childCount {
 		child := node.Child(i)
 		childLine := child.StartPoint().Row
