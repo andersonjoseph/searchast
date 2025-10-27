@@ -57,6 +57,11 @@ func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Se
 	// If the initial lines or their surroundings are part of a scope, include that entire scope.
 	linesSoFar := cb.linesToShow.ToSlice()
 	for _, line := range linesSoFar {
+		// we won't add the root scope (otherwise it will include the entire file)
+		if line == 0 || st.lines[line].scope.size() == 0 {
+			continue
+		}
+
 		lineInfo := st.lines[line]
 		for childLine := range lineInfo.scope.children() {
 			cb.linesToShow.Add(childLine)
@@ -88,10 +93,13 @@ func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest in
 	gap := cb.SurroundingLines
 
 	for line := range linesOfInterest {
-		for currentLine := line - gap; currentLine <= line+gap; currentLine++ {
-			if currentLine >= lineNumber(len(st.lines)) {
-				break
-			}
+		startLine := line - gap
+		if line < gap {
+			startLine = 0
+		}
+		endLine := min(line+gap, lineNumber(len(st.lines)-1))
+
+		for currentLine := startLine; currentLine <= endLine; currentLine++ {
 			cb.linesToShow.Add(currentLine)
 		}
 	}
@@ -99,7 +107,7 @@ func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest in
 
 func (cb *ContextBuilder) addParentContext(st *sourceTree, line lineNumber) {
 	parentLine := st.lines[line].scope.parent
-	if cb.seenParents.Has(parentLine) {
+	if cb.seenParents.Has(parentLine) || parentLine == 0 {
 		return
 	}
 	cb.seenParents.Add(parentLine)

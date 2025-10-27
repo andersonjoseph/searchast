@@ -39,6 +39,10 @@ func (s scope) size() uint32 {
 // children returns an iterator sequence for all line numbers within a scope.
 func (s scope) children() iter.Seq[lineNumber] {
 	return func(yield func(lineNumber) bool) {
+		if s.start == s.end && s.end == 0 {
+			return
+		}
+
 		for currentChild := s.start; currentChild <= s.end; currentChild++ {
 			if !yield(currentChild) {
 				return
