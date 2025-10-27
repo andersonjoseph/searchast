@@ -9,7 +9,7 @@ tasks:
   build:
     desc: Build the main executable
     cmds:
-      - go build .
+      - go build ./cmd/findctx
   
   run:
     desc: Run the program directly
