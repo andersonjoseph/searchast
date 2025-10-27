@@ -5,11 +5,11 @@ import (
 	"slices"
 )
 
-// ContextBuilder constructs a set of line numbers to display based on an initial
+// contextBuilder constructs a set of line numbers to display based on an initial
 // set of lines. It expands this set by including parent and child
 // scopes, surrounding lines, and by closing small gaps to create a more
 // readable and contextual output.
-type ContextBuilder struct {
+type contextBuilder struct {
 	// SurroundingLines specifies how many lines of context to show around a matched line.
 	SurroundingLines lineNumber
 	// GapToClose determines the maximum gap size between two lines that should be filled in.
@@ -23,10 +23,8 @@ type ContextBuilder struct {
 	linesToShow internal.Set[lineNumber]
 }
 
-// NewContextBuilder creates a new ContextBuilder with default values, which can be
-// customized by passing in functional options.
-func NewContextBuilder(opts ...Option) *ContextBuilder {
-	cb := &ContextBuilder{
+func NewContextBuilder(opts ...Option) *contextBuilder {
+	cb := &contextBuilder{
 		SurroundingLines: 3,
 		GapToClose:       3,
 		ParentContext:    true,
@@ -46,7 +44,7 @@ func NewContextBuilder(opts ...Option) *ContextBuilder {
 // AddContext takes a sourceTree and a set of lines of interest and returns an
 // expanded set of lines based on the builder's configuration. The builder's
 // internal state is reset after each call
-func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Set[lineNumber]) internal.Set[lineNumber] {
+func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Set[lineNumber]) internal.Set[lineNumber] {
 	defer func() {
 		cb.linesToShow.Clear()
 		cb.seenParents.Clear()
@@ -89,12 +87,12 @@ func (cb *ContextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Se
 
 // addSurroundingLines expands the set of lines to show by including a
 // specified number of lines before and after each line of interest.
-func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest internal.Set[lineNumber]) {
+func (cb *contextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest internal.Set[lineNumber]) {
 	gap := cb.SurroundingLines
 
 	for line := range linesOfInterest {
 		startLine := line - gap
-		if line < gap {
+		if line < gap { // this prevents overflow since linenumbers are uint32
 			startLine = 0
 		}
 		endLine := min(line+gap, lineNumber(len(st.lines)-1))
@@ -105,7 +103,7 @@ func (cb *ContextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest in
 	}
 }
 
-func (cb *ContextBuilder) addParentContext(st *sourceTree, line lineNumber) {
+func (cb *contextBuilder) addParentContext(st *sourceTree, line lineNumber) {
 	parentLine := st.lines[line].scope.parent
 	if cb.seenParents.Has(parentLine) || parentLine == 0 {
 		return
@@ -127,7 +125,7 @@ func (cb *ContextBuilder) addParentContext(st *sourceTree, line lineNumber) {
 // addChildContext adds the context of child scopes. It uses a heuristic to
 // show only the beginning of large child scopes to avoid excessive output,
 // but shows the full scope if it's small.
-func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
+func (cb *contextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 	if line == 0 || st.lines[line].scope.size() == 0 {
 		return
 	}
@@ -150,7 +148,7 @@ func (cb *ContextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 
 // closeGaps finds small gaps between lines in the current set and adds the
 // missing lines to create a more contiguous block of code.
-func (cb *ContextBuilder) closeGaps() {
+func (cb *contextBuilder) closeGaps() {
 	sortedLines := cb.linesToShow.ToSlice()
 	slices.Sort(sortedLines)
 
@@ -168,32 +166,32 @@ func (cb *ContextBuilder) closeGaps() {
 	}
 }
 
-type Option func(*ContextBuilder)
+type Option func(*contextBuilder)
 
 // WithGapToClose sets the maximum gap between lines that should be filled in.
 func WithGapToClose(gap lineNumber) Option {
-	return func(cb *ContextBuilder) {
+	return func(cb *contextBuilder) {
 		cb.GapToClose = gap
 	}
 }
 
 // WithParentContext enables or disables the inclusion of parent context.
 func WithParentContext(enabled bool) Option {
-	return func(cb *ContextBuilder) {
+	return func(cb *contextBuilder) {
 		cb.ParentContext = enabled
 	}
 }
 
 // WithChildContext enables or disables the inclusion of child context.
 func WithChildContext(enabled bool) Option {
-	return func(cb *ContextBuilder) {
+	return func(cb *contextBuilder) {
 		cb.ChildContext = enabled
 	}
 }
 
 // WithSurroundingLines enables or disables the inclusion of surrounding lines.
 func WithSurroundingLines(lines lineNumber) Option {
-	return func(cb *ContextBuilder) {
+	return func(cb *contextBuilder) {
 		cb.SurroundingLines = lines
 	}
 }
