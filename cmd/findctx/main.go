@@ -50,8 +50,7 @@ func main() {
 	}
 
 	if len(linesOfInterest) == 0 {
-		fmt.Println("No matches found.")
-		return
+		log.Fatalf("No matches found")
 	}
 
 	linesToShow := findctx.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
