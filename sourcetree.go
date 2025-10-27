@@ -51,13 +51,12 @@ func (s scope) children() iter.Seq[lineNumber] {
 	}
 }
 
-// sourceTree holds the entire parsed source file, line by line, with scope annotations.
 type sourceTree struct {
 	lines []line
 }
 
 // NewSourceTree costructs a new sourceTree from a reader and filename.
-// the filename is used to determine the language to parse the source code in.
+// the filename is used to determine the programming language.
 func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
 	sourceCode, err := io.ReadAll(r)
 	if err != nil {
