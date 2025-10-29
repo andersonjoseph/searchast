@@ -83,6 +83,10 @@ func NewSourceTree(ctx context.Context, r io.Reader, filename string) (*sourceTr
 	return st, nil
 }
 
+func (st *sourceTree) Lines() []line {
+	return st.lines
+}
+
 // build recursively traverses the tree-sitter abstract syntax tree (AST)
 // to populate the scope information for each line.
 func (st *sourceTree) build(node *sitter.Node) {

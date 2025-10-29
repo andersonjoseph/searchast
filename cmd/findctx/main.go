@@ -55,6 +55,6 @@ func main() {
 	}
 
 	linesToShow := findctx.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
-	output := findctx.FormatOutput(sourceTree, linesToShow, linesOfInterest)
+	output := findctx.FormatOutput(sourceTree.Lines(), linesToShow, linesOfInterest)
 	fmt.Print(output)
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func FormatOutput(st *sourceTree, linesToShow Set[lineNumber], linesToHighlight Set[lineNumber]) string {
+func FormatOutput(lines []line, linesToShow Set[lineNumber], linesToHighlight Set[lineNumber]) string {
 	if len(linesToShow) == 0 || len(linesToHighlight) == 0 {
 		return ""
 	}
@@ -13,7 +13,7 @@ func FormatOutput(st *sourceTree, linesToShow Set[lineNumber], linesToHighlight 
 	output := strings.Builder{}
 	isGapPrinted := false
 
-	for i, line := range st.lines {
+	for i, line := range lines {
 		if !linesToShow.Has(lineNumber(i)) {
 			if !isGapPrinted {
 				output.WriteString("⋮\n")
