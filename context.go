@@ -1,7 +1,6 @@
 package findctx
 
 import (
-	"github.com/andersonjoseph/findctx/internal"
 	"slices"
 )
 
@@ -19,8 +18,8 @@ type contextBuilder struct {
 	// ChildContext, if true, includes the beginning of any child scopes.
 	ChildContext bool
 
-	seenParents internal.Set[lineNumber]
-	linesToShow internal.Set[lineNumber]
+	seenParents Set[lineNumber]
+	linesToShow Set[lineNumber]
 }
 
 func NewContextBuilder(opts ...Option) *contextBuilder {
@@ -30,8 +29,8 @@ func NewContextBuilder(opts ...Option) *contextBuilder {
 		ParentContext:    true,
 		ChildContext:     true,
 
-		seenParents: internal.NewSet[lineNumber](),
-		linesToShow: internal.NewSet[lineNumber](),
+		seenParents: NewSet[lineNumber](),
+		linesToShow: NewSet[lineNumber](),
 	}
 
 	for _, opt := range opts {
@@ -43,8 +42,8 @@ func NewContextBuilder(opts ...Option) *contextBuilder {
 
 // AddContext takes a sourceTree and a set of lines of interest and returns an
 // expanded set of lines based on the builder's configuration. The builder's
-// internal state is reset after each call
-func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Set[lineNumber]) internal.Set[lineNumber] {
+// state is reset after each call
+func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest Set[lineNumber]) Set[lineNumber] {
 	defer func() {
 		cb.linesToShow.Clear()
 		cb.seenParents.Clear()
@@ -87,7 +86,7 @@ func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest internal.Se
 
 // addSurroundingLines expands the set of lines to show by including a
 // specified number of lines before and after each line of interest.
-func (cb *contextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest internal.Set[lineNumber]) {
+func (cb *contextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest Set[lineNumber]) {
 	gap := cb.SurroundingLines
 
 	for line := range linesOfInterest {

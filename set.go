@@ -1,4 +1,4 @@
-package internal
+package findctx
 
 type Set[T comparable] map[T]struct{}
 

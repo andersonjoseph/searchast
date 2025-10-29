@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/andersonjoseph/findctx/internal"
 )
 
 type failingReader struct{}
@@ -101,31 +99,31 @@ func main() {
 	testCases := []struct {
 		name          string
 		pattern       string
-		expectedLines internal.Set[lineNumber]
+		expectedLines Set[lineNumber]
 		expectErr     bool
 	}{
 		{
 			name:          "finds a single unique line",
 			pattern:       `"start"`,
-			expectedLines: internal.NewSetFromSlice([]lineNumber{5}),
+			expectedLines: NewSetFromSlice([]lineNumber{5}),
 			expectErr:     false,
 		},
 		{
 			name:          "finds multiple lines",
 			pattern:       `fmt.Println`,
-			expectedLines: internal.NewSetFromSlice([]lineNumber{5, 9}),
+			expectedLines: NewSetFromSlice([]lineNumber{5, 9}),
 			expectErr:     false,
 		},
 		{
 			name:          "finds no matches",
 			pattern:       `nonexistent_string`,
-			expectedLines: internal.NewSetFromSlice([]lineNumber{}),
+			expectedLines: NewSetFromSlice([]lineNumber{}),
 			expectErr:     false,
 		},
 		{
 			name:          "matches a comment",
 			pattern:       `A comment`,
-			expectedLines: internal.NewSetFromSlice([]lineNumber{8}),
+			expectedLines: NewSetFromSlice([]lineNumber{8}),
 			expectErr:     false,
 		},
 		{

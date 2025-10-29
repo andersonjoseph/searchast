@@ -2,11 +2,10 @@ package findctx
 
 import (
 	"fmt"
-	"github.com/andersonjoseph/findctx/internal"
 	"strings"
 )
 
-func FormatOutput(st *sourceTree, linesToShow internal.Set[lineNumber], linesOfInterest internal.Set[lineNumber]) string {
+func FormatOutput(st *sourceTree, linesToShow Set[lineNumber], linesOfInterest Set[lineNumber]) string {
 	if len(linesOfInterest) == 0 {
 		return ""
 	}

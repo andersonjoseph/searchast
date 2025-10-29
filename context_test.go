@@ -4,8 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/andersonjoseph/findctx/internal"
 )
 
 func mustNewSourceTree(t *testing.T, source string) *sourceTree {
@@ -79,8 +77,8 @@ func main() { // 6
 	// 1. Surrounding lines for 8: 9,10 and 7,6,5
 	// 2. Parent context for line 8: adds scope for `if` (7,9) and `main` (6,10).
 	// The final set is contiguous, so no gaps are closed.
-	linesOfInterest := internal.NewSetFromSlice([]lineNumber{8})
-	expectedLines := internal.NewSetFromSlice([]lineNumber{0, 5, 6, 7, 8, 9, 10})
+	linesOfInterest := NewSetFromSlice([]lineNumber{8})
+	expectedLines := NewSetFromSlice([]lineNumber{0, 5, 6, 7, 8, 9, 10})
 
 	actualLines := cb.AddContext(st, linesOfInterest)
 
@@ -149,8 +147,8 @@ func main() { // 2
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			cb := NewContextBuilder(tc.opts...)
-			linesOfInterest := internal.NewSetFromSlice(tc.interest)
-			expected := internal.NewSetFromSlice(tc.expectedLines)
+			linesOfInterest := NewSetFromSlice(tc.interest)
+			expected := NewSetFromSlice(tc.expectedLines)
 
 			actual := cb.AddContext(st, linesOfInterest)
 
@@ -172,8 +170,8 @@ func main() { // 2
 	cb := NewContextBuilder(WithSurroundingLines(1)) // smaller surrounding for predictability
 
 	t.Run("line of interest at start of file", func(t *testing.T) {
-		linesOfInterest := internal.NewSetFromSlice([]lineNumber{0})
-		expected := internal.NewSetFromSlice([]lineNumber{0, 1})
+		linesOfInterest := NewSetFromSlice([]lineNumber{0})
+		expected := NewSetFromSlice([]lineNumber{0, 1})
 		actual := cb.AddContext(st, linesOfInterest)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("\nexpected lines: %v\n     got lines: %v", expected.ToSlice(), actual.ToSlice())
@@ -181,8 +179,8 @@ func main() { // 2
 	})
 
 	t.Run("empty lines of interest returns empty set", func(t *testing.T) {
-		linesOfInterest := internal.NewSet[lineNumber]()
-		expected := internal.NewSet[lineNumber]()
+		linesOfInterest := NewSet[lineNumber]()
+		expected := NewSet[lineNumber]()
 		actual := cb.AddContext(st, linesOfInterest)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("\nexpected lines: %v\n     got lines: %v", expected.ToSlice(), actual.ToSlice())
@@ -204,8 +202,8 @@ func second() { // 5
 	cb := NewContextBuilder(WithSurroundingLines(0), WithParentContext(true))
 
 	// First call
-	firstCallLines := internal.NewSetFromSlice([]lineNumber{2})
-	expectedFirst := internal.NewSetFromSlice([]lineNumber{1, 2, 3})
+	firstCallLines := NewSetFromSlice([]lineNumber{2})
+	expectedFirst := NewSetFromSlice([]lineNumber{1, 2, 3})
 	actualFirst := cb.AddContext(st, firstCallLines)
 
 	if !reflect.DeepEqual(actualFirst, expectedFirst) {
@@ -214,8 +212,8 @@ func second() { // 5
 	}
 
 	// Second call with completely different input should not be affected by the first
-	secondCallLines := internal.NewSetFromSlice([]lineNumber{6})
-	expectedSecond := internal.NewSetFromSlice([]lineNumber{5, 6, 7})
+	secondCallLines := NewSetFromSlice([]lineNumber{6})
+	expectedSecond := NewSetFromSlice([]lineNumber{5, 6, 7})
 	actualSecond := cb.AddContext(st, secondCallLines)
 
 	if !reflect.DeepEqual(actualSecond, expectedSecond) {
