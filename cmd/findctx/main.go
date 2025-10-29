@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -39,7 +40,7 @@ func main() {
 		}
 	}()
 
-	sourceTree, err := findctx.NewSourceTree(f, filename)
+	sourceTree, err := findctx.NewSourceTree(context.Background(), f, filename)
 	if err != nil {
 		log.Fatalf("Error opening source file '%s': %v", filename, err)
 	}

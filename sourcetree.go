@@ -52,7 +52,7 @@ type sourceTree struct {
 
 // NewSourceTree costructs a new sourceTree from a reader and filename.
 // the filename is used to determine the programming language.
-func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
+func NewSourceTree(ctx context.Context, r io.Reader, filename string) (*sourceTree, error) {
 	sourceCode, err := io.ReadAll(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
@@ -61,7 +61,7 @@ func NewSourceTree(r io.Reader, filename string) (*sourceTree, error) {
 
 	parser.SetLanguage(language.FromFilename(filename).SitterLang)
 
-	tree, err := parser.ParseCtx(context.Background(), nil, sourceCode)
+	tree, err := parser.ParseCtx(ctx, nil, sourceCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse file %s: %w", filename, err)
 	}

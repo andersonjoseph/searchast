@@ -1,6 +1,7 @@
 package findctx
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
@@ -9,7 +10,7 @@ import (
 func mustNewSourceTree(t *testing.T, source string) *sourceTree {
 	t.Helper()
 	r := strings.NewReader(source)
-	st, err := NewSourceTree(r, "test.go")
+	st, err := NewSourceTree(context.Background(), r, "test.go")
 	if err != nil {
 		t.Fatalf("failed to create sourceTree: %v", err)
 	}

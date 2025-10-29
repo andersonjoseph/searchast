@@ -1,6 +1,7 @@
 package findctx
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"strings"
@@ -27,7 +28,7 @@ func main() { // Line 4
 `
 	t.Run("successfully creates a tree from valid source", func(t *testing.T) {
 		r := strings.NewReader(sourceForTreeCreation)
-		st, err := NewSourceTree(r, "test.go")
+		st, err := NewSourceTree(context.Background(), r, "test.go")
 
 		if err != nil {
 			t.Fatalf("expected no error, but got: %v", err)
@@ -56,7 +57,7 @@ func main() { // Line 4
 	})
 
 	t.Run("returns an error if reading fails", func(t *testing.T) {
-		_, err := NewSourceTree(&failingReader{}, "test.go")
+		_, err := NewSourceTree(context.Background(), &failingReader{}, "test.go")
 		if err == nil {
 			t.Fatal("expected an error for a failing reader, but got none")
 		}
@@ -64,7 +65,7 @@ func main() { // Line 4
 
 	t.Run("handles empty source code gracefully", func(t *testing.T) {
 		r := strings.NewReader("")
-		st, err := NewSourceTree(r, "test.go")
+		st, err := NewSourceTree(context.Background(), r, "test.go")
 		if err != nil {
 			t.Fatalf("expected no error for empty input, but got: %v", err)
 		}
@@ -91,7 +92,7 @@ func main() {
 }
 `
 	r := strings.NewReader(sourceForSearch)
-	st, err := NewSourceTree(r, "test.go")
+	st, err := NewSourceTree(context.Background(), r, "test.go")
 	if err != nil {
 		t.Fatalf("failed to setup sourceTree for search test: %v", err)
 	}
