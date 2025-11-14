@@ -35,6 +35,7 @@ func main() { // Line 4
 		}
 		if st == nil {
 			t.Fatal("sourceTree should not be nil")
+			return
 		}
 
 		splitSource := strings.Split(sourceForTreeCreation, "\n")
@@ -149,6 +150,50 @@ func main() {
 				t.Fatalf("did not expect an error, but got: %v", err)
 			}
 
+			if !reflect.DeepEqual(lines, tc.expectedLines) {
+				t.Errorf("expected lines %v, but got %v", tc.expectedLines, lines)
+			}
+		})
+	}
+}
+
+func TestTopLevel(t *testing.T) {
+	const sourceForSearch = `package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("start") // Line 5
+
+	if true { // Line 7
+		// A comment
+		fmt.Println("inside") // Line 9
+	}
+
+	return // Line 12
+}`
+	r := strings.NewReader(sourceForSearch)
+	st, err := NewSourceTree(context.Background(), r, "test.go")
+	if err != nil {
+		t.Fatalf("failed to setup sourceTree for search test: %v", err)
+	}
+
+	testCases := []struct {
+		name          string
+		pattern       string
+		expectedLines Set[lineNumber]
+		expectErr     bool
+	}{
+		{
+			name:          "gives a set of top-level lines",
+			expectedLines: NewSetFromSlice([]lineNumber{0, 2, 4}),
+			expectErr:     false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			lines := st.TopLevel()
 			if !reflect.DeepEqual(lines, tc.expectedLines) {
 				t.Errorf("expected lines %v, but got %v", tc.expectedLines, lines)
 			}

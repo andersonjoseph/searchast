@@ -11,10 +11,15 @@ tasks:
     cmds:
       - go build ./cmd/findctx
   
-  run:
+  findctx:
     desc: Run the program directly
     cmds:
       - go run ./cmd/findctx {{.CLI_ARGS}}
+
+  overview:
+    desc: Run the program directly
+    cmds:
+      - go run ./cmd/overview {{.CLI_ARGS}}
   
   test:
     desc: Run all tests

@@ -30,8 +30,8 @@ func TestNewContextBuilder(t *testing.T) {
 		if !cb.ParentContext {
 			t.Error("expected ParentContext to be true, got false")
 		}
-		if !cb.ChildContext {
-			t.Error("expected ChildContext to be true, got false")
+		if cb.ChildLines != 3 {
+			t.Errorf("expected ChildLines to be 3, got %d", cb.ChildLines)
 		}
 	})
 
@@ -40,7 +40,7 @@ func TestNewContextBuilder(t *testing.T) {
 			WithSurroundingLines(5),
 			WithGapToClose(10),
 			WithParentContext(false),
-			WithChildContext(false),
+			WithChildLines(5),
 		)
 
 		if cb.SurroundingLines != 5 {
@@ -52,8 +52,8 @@ func TestNewContextBuilder(t *testing.T) {
 		if cb.ParentContext {
 			t.Error("expected ParentContext to be false, got true")
 		}
-		if cb.ChildContext {
-			t.Error("expected ChildContext to be false, got true")
+		if cb.ChildLines != 5 {
+			t.Errorf("expected ChildContext to be 5, got %d", cb.ChildLines)
 		}
 	})
 }
@@ -79,7 +79,7 @@ func main() { // 6
 	// 2. Parent context for line 8: adds scope for `if` (7,9) and `main` (6,10).
 	// The final set is contiguous, so no gaps are closed.
 	linesOfInterest := NewSetFromSlice([]lineNumber{8})
-	expectedLines := NewSetFromSlice([]lineNumber{0, 5, 6, 7, 8, 9, 10})
+	expectedLines := NewSetFromSlice([]lineNumber{5, 6, 7, 8, 9, 10})
 
 	actualLines := cb.AddContext(st, linesOfInterest)
 
@@ -100,8 +100,7 @@ func main() { // 2
 	// 8
 	fmt.Println("two") // 9
 	// 10
-} // 11
-`
+} // 11`
 	st := mustNewSourceTree(t, source)
 
 	testCases := []struct {
@@ -136,7 +135,7 @@ func main() { // 2
 		},
 		{
 			name:     "Gap not closing when too small",
-			opts:     []Option{WithGapToClose(2), WithSurroundingLines(0)},
+			opts:     []Option{WithGapToClose(2), WithSurroundingLines(0), WithChildLines(0)},
 			interest: []lineNumber{5, 9},
 			// Interest is 5 and 9. Gap is 3.
 			// With GapToClose=2, the gap is NOT filled.

@@ -72,6 +72,8 @@ func NewSourceTree(ctx context.Context, r io.Reader, filename string) (*sourceTr
 	lines := make([]line, len(sourceLines))
 	for i := range lines {
 		lines[i].text = sourceLines[i]
+		lines[i].scope.start = lineNumber(i)
+		lines[i].scope.end = lineNumber(i)
 	}
 
 	st := &sourceTree{
@@ -92,15 +94,15 @@ func (st *sourceTree) Lines() []line {
 func (st *sourceTree) build(node *sitter.Node) {
 	childCount := int(node.ChildCount())
 
+	startLine := node.StartPoint().Row
+	endLine := node.EndPoint().Row
+
 	if !node.IsNamed() { // If the node is not named, it is a leaf node and has no scope information.
 		for i := range childCount {
 			st.build(node.Child(i))
 		}
 		return
 	}
-
-	startLine := node.StartPoint().Row
-	endLine := node.EndPoint().Row
 
 	nodeSize := endLine - startLine
 
@@ -139,4 +141,15 @@ func (st *sourceTree) Search(pattern string) (Set[lineNumber], error) {
 	}
 
 	return linesOfInterest, nil
+}
+
+func (st *sourceTree) TopLevel() Set[lineNumber] {
+	lines := NewSet[lineNumber]()
+	for _, line := range st.lines {
+		if line.scope.parent == 0 && line.text != "" {
+			lines.Add(line.scope.start)
+		}
+	}
+
+	return lines
 }

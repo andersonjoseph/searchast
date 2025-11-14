@@ -11,12 +11,14 @@ import (
 type contextBuilder struct {
 	// SurroundingLines specifies how many lines of context to show around a matched line.
 	SurroundingLines lineNumber
+	// ChildLines specifies how many lines of context to show after a parent scope.
+	ChildLines lineNumber
 	// GapToClose determines the maximum gap size between two lines that should be filled in.
 	GapToClose lineNumber
 	// ParentContext, if true, includes the start and end lines of parent scopes.
 	ParentContext bool
-	// ChildContext, if true, includes the beginning of any child scopes.
-	ChildContext bool
+	// CloseScopeGaps, if true, includes all lines between the start and end of a scope.
+	CloseScopeGaps bool
 
 	seenParents Set[lineNumber]
 	linesToShow Set[lineNumber]
@@ -25,9 +27,10 @@ type contextBuilder struct {
 func NewContextBuilder(opts ...Option) *contextBuilder {
 	cb := &contextBuilder{
 		SurroundingLines: 3,
+		ChildLines:       3,
 		GapToClose:       3,
 		ParentContext:    true,
-		ChildContext:     true,
+		CloseScopeGaps:   true,
 
 		seenParents: NewSet[lineNumber](),
 		linesToShow: NewSet[lineNumber](),
@@ -49,22 +52,19 @@ func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest Set[lineNum
 		cb.seenParents.Clear()
 	}()
 
-	cb.addSurroundingLines(st, linesOfInterest)
-
-	// If the initial lines or their surroundings are part of a scope, include that entire scope.
-	linesSoFar := cb.linesToShow.ToSlice()
-	for _, line := range linesSoFar {
-		// we won't add the root scope (otherwise it will include the entire file)
-		if line == 0 || st.lines[line].scope.size() == 0 {
-			continue
-		}
-
-		lineInfo := st.lines[line]
-		for childLine := range lineInfo.scope.children() {
-			cb.linesToShow.Add(childLine)
-		}
+	for line := range linesOfInterest {
+		cb.linesToShow.Add(line)
 	}
 
+	if cb.SurroundingLines > 0 {
+		cb.addSurroundingLines(st, linesOfInterest)
+	}
+
+	if cb.CloseScopeGaps {
+		cb.closeScopeGaps(st, linesOfInterest)
+	}
+
+	var linesSoFar []lineNumber
 	if cb.ParentContext {
 		linesSoFar = cb.linesToShow.ToSlice()
 		for _, line := range linesSoFar {
@@ -72,7 +72,7 @@ func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest Set[lineNum
 		}
 	}
 
-	if cb.ChildContext {
+	if cb.ChildLines > 0 {
 		linesSoFar = cb.linesToShow.ToSlice()
 		for _, line := range linesSoFar {
 			cb.addChildContext(st, line)
@@ -98,6 +98,20 @@ func (cb *contextBuilder) addSurroundingLines(st *sourceTree, linesOfInterest Se
 
 		for currentLine := startLine; currentLine <= endLine; currentLine++ {
 			cb.linesToShow.Add(currentLine)
+		}
+	}
+}
+
+func (cb *contextBuilder) closeScopeGaps(st *sourceTree, linesOfInterest Set[lineNumber]) {
+	for line := range linesOfInterest {
+		// we won't add the root scope (otherwise it will include the entire file)
+		if line == 0 || st.lines[line].scope.size() == 0 {
+			continue
+		}
+
+		lineInfo := st.lines[line]
+		for childLine := range lineInfo.scope.children() {
+			cb.linesToShow.Add(childLine)
 		}
 	}
 }
@@ -131,7 +145,7 @@ func (cb *contextBuilder) addChildContext(st *sourceTree, line lineNumber) {
 
 	lineInfo := st.lines[line]
 
-	limitLine := min(cb.SurroundingLines+lineInfo.scope.start, lineInfo.scope.end)
+	limitLine := min(cb.ChildLines+lineInfo.scope.start, lineInfo.scope.end)
 
 	// If showing the initial gap would cover over 70% of the scope, just show the whole thing.
 	threshold := lineInfo.scope.start + ((lineInfo.scope.size() * 70) / 100)
@@ -181,10 +195,10 @@ func WithParentContext(enabled bool) Option {
 	}
 }
 
-// WithChildContext enables or disables the inclusion of child context.
-func WithChildContext(enabled bool) Option {
+// WithChildLines enables or disables the inclusion of child context.
+func WithChildLines(lines lineNumber) Option {
 	return func(cb *contextBuilder) {
-		cb.ChildContext = enabled
+		cb.ChildLines = lines
 	}
 }
 
@@ -192,5 +206,12 @@ func WithChildContext(enabled bool) Option {
 func WithSurroundingLines(lines lineNumber) Option {
 	return func(cb *contextBuilder) {
 		cb.SurroundingLines = lines
+	}
+}
+
+// WithCloseScopeGaps enables or disables the inclusion of lines between the start and end of a scope.
+func WithCloseScopeGaps(enabled bool) Option {
+	return func(cb *contextBuilder) {
+		cb.CloseScopeGaps = enabled
 	}
 }
