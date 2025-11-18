@@ -57,6 +57,7 @@ func main() {
 
 	linesToShow := overivewContextBuilder.AddContext(sourceTree, linesOfInterest)
 
-	output := findctx.FormatOutput(sourceTree.Lines(), linesToShow, linesOfInterest)
+	formatter := findctx.NewTextFormatter()
+	output := formatter.Format(sourceTree.Lines(), linesToShow, linesOfInterest)
 	fmt.Print(output)
 }
