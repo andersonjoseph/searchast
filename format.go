@@ -35,9 +35,9 @@ func NewTextFormatter(opts ...TextFormatterOption) *TextFormatter {
 	return formatter
 }
 
-func WithLineNumbers() TextFormatterOption {
+func WithLineNumbers(lineNumbers bool) TextFormatterOption {
 	return func(tf *TextFormatter) {
-		tf.lineNumbers = true
+		tf.lineNumbers = lineNumbers
 	}
 }
 
