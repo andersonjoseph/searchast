@@ -52,6 +52,7 @@ func main() {
 		findctx.WithSurroundingLines(2),
 		findctx.WithParentContext(false),
 		findctx.WithCloseScopeGaps(false),
+		findctx.WithExpandChildScopes(false),
 		findctx.WithChildLines(3),
 	)
 

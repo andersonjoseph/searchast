@@ -167,7 +167,7 @@ func main() { // 2
 } // 4
 // 5`
 	st := mustNewSourceTree(t, source)
-	cb := NewContextBuilder(WithSurroundingLines(1)) // smaller surrounding for predictability
+	cb := NewContextBuilder(WithSurroundingLines(1), WithExpandChildScopes(false)) // smaller surrounding for predictability
 
 	t.Run("line of interest at start of file", func(t *testing.T) {
 		linesOfInterest := NewSetFromSlice([]lineNumber{0})
@@ -184,6 +184,43 @@ func main() { // 2
 		actual := cb.AddContext(st, linesOfInterest)
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("\nexpected lines: %v\n     got lines: %v", expected.ToSlice(), actual.ToSlice())
+		}
+	})
+
+	t.Run("expand child scopes option", func(t *testing.T) {
+		// Test with ExpandChildScopes enabled
+		cbWithExpansion := NewContextBuilder(
+			WithExpandChildScopes(true),
+			WithSurroundingLines(0),
+			WithChildLines(0),
+			WithParentContext(false),
+			WithCloseScopeGaps(false),
+			WithGapToClose(0),
+		)
+		linesOfInterest := NewSetFromSlice([]lineNumber{2}) // func main() line
+		actualWithExpansion := cbWithExpansion.AddContext(st, linesOfInterest)
+
+		// Should include the function scope (lines 2, 3, 4)
+		expectedWithExpansion := NewSetFromSlice([]lineNumber{2, 3, 4})
+		if !reflect.DeepEqual(actualWithExpansion, expectedWithExpansion) {
+			t.Errorf("\nwith expansion expected lines: %v\n     got lines: %v", expectedWithExpansion.ToSlice(), actualWithExpansion.ToSlice())
+		}
+
+		// Test with ExpandChildScopes disabled
+		cbWithoutExpansion := NewContextBuilder(
+			WithExpandChildScopes(false),
+			WithSurroundingLines(0),
+			WithChildLines(0),
+			WithParentContext(false),
+			WithCloseScopeGaps(false),
+			WithGapToClose(0),
+		)
+		actualWithoutExpansion := cbWithoutExpansion.AddContext(st, linesOfInterest)
+
+		// Should only include the line of interest itself
+		expectedWithoutExpansion := NewSetFromSlice([]lineNumber{2})
+		if !reflect.DeepEqual(actualWithoutExpansion, expectedWithoutExpansion) {
+			t.Errorf("\nwithout expansion expected lines: %v\n     got lines: %v", expectedWithoutExpansion.ToSlice(), actualWithoutExpansion.ToSlice())
 		}
 	})
 }
@@ -219,5 +256,38 @@ func second() { // 5
 	if !reflect.DeepEqual(actualSecond, expectedSecond) {
 		t.Errorf("second call produced incorrect result, indicating state was not reset.\nexpected: %v\n     got: %v",
 			expectedSecond.ToSlice(), actualSecond.ToSlice())
+	}
+}
+
+func TestAddContext_ExpandsChildScopes(t *testing.T) {
+	const source = `package main // 0
+
+func outer() { // 2
+	if true { // 3
+		fmt.Println("inner") // 4
+	} // 5
+	x := 1 // 6
+} // 7`
+	st := mustNewSourceTree(t, source)
+
+	// Disable all other context features to isolate the child scope expansion
+	cb := NewContextBuilder(
+		WithSurroundingLines(0),
+		WithParentContext(false),
+		WithChildLines(0),
+		WithCloseScopeGaps(false),
+		WithGapToClose(0),
+	)
+
+	// Line 3 is the start of the "if" block scope
+	linesOfInterest := NewSetFromSlice([]lineNumber{3})
+
+	// The code should expand this to include all lines in the "if" scope (lines 3, 4, 5)
+	expectedLines := NewSetFromSlice([]lineNumber{3, 4, 5})
+
+	actualLines := cb.AddContext(st, linesOfInterest)
+
+	if !reflect.DeepEqual(actualLines, expectedLines) {
+		t.Errorf("\nexpected lines: %v\n     got lines: %v", expectedLines.ToSlice(), actualLines.ToSlice())
 	}
 }

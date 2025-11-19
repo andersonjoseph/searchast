@@ -19,6 +19,8 @@ type contextBuilder struct {
 	ParentContext bool
 	// CloseScopeGaps, if true, includes all lines between the start and end of a scope.
 	CloseScopeGaps bool
+	// ExpandInitialScopes, if true, includes all the lines of scopes present at the initial lines of interest.
+	ExpandInitialScopes bool
 
 	seenParents Set[lineNumber]
 	linesToShow Set[lineNumber]
@@ -26,11 +28,12 @@ type contextBuilder struct {
 
 func NewContextBuilder(opts ...Option) *contextBuilder {
 	cb := &contextBuilder{
-		SurroundingLines: 3,
-		ChildLines:       3,
-		GapToClose:       3,
-		ParentContext:    true,
-		CloseScopeGaps:   true,
+		SurroundingLines:    3,
+		ChildLines:          3,
+		GapToClose:          3,
+		ParentContext:       true,
+		CloseScopeGaps:      true,
+		ExpandInitialScopes: true,
 
 		seenParents: NewSet[lineNumber](),
 		linesToShow: NewSet[lineNumber](),
@@ -60,11 +63,26 @@ func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest Set[lineNum
 		cb.addSurroundingLines(st, linesOfInterest)
 	}
 
+	var linesSoFar []lineNumber
+	linesSoFar = cb.linesToShow.ToSlice()
+
+	// If any of our interesting lines so far is start of a code block
+	// let's mark every line inside of that block as interesting
+	// can you gimme some suggestions for this option AI? I'm not that happy with the name
+	if cb.ExpandInitialScopes {
+		for _, line := range linesSoFar {
+			if st.lines[line].scope.size() > 0 {
+				for childLine := range st.lines[line].scope.children() {
+					cb.linesToShow.Add(childLine)
+				}
+			}
+		}
+	}
+
 	if cb.CloseScopeGaps {
 		cb.closeScopeGaps(st, linesOfInterest)
 	}
 
-	var linesSoFar []lineNumber
 	if cb.ParentContext {
 		linesSoFar = cb.linesToShow.ToSlice()
 		for _, line := range linesSoFar {
@@ -213,5 +231,12 @@ func WithSurroundingLines(lines lineNumber) Option {
 func WithCloseScopeGaps(enabled bool) Option {
 	return func(cb *contextBuilder) {
 		cb.CloseScopeGaps = enabled
+	}
+}
+
+// WithExpandChildScopes enables or disables the inclusion of all lines within child scopes of matched lines.
+func WithExpandChildScopes(enabled bool) Option {
+	return func(cb *contextBuilder) {
+		cb.ExpandInitialScopes = enabled
 	}
 }
