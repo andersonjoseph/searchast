@@ -3,6 +3,7 @@
 package language
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -121,10 +122,10 @@ var extToLang = map[string]Info{
 	".pro":    {Name: "Prolog", SitterLang: sitter.NewLanguage(prolog.GetLanguage())},
 }
 
-func FromFilename(filename string) *Info {
+func FromFilename(filename string) (*Info, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	if info, ok := extToLang[ext]; ok {
-		return &info
+		return &info, nil
 	}
-	return nil
+	return nil, fmt.Errorf("no language found for file extension %s", ext)
 }
