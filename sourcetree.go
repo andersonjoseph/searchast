@@ -1,7 +1,7 @@
-// Package findctx parses a source code file to build a tree structure representing
+// Package searchast parses a source code file to build a tree structure representing
 // code scopes. It allows for searching specific patterns and understanding their
 // context within the code's hierarchy.
-package findctx
+package searchast
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/andersonjoseph/findctx/language"
+	"github.com/andersonjoseph/searchast/language"
 	sitter "github.com/smacker/go-tree-sitter"
 )
 

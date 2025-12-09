@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/andersonjoseph/findctx"
+	"github.com/andersonjoseph/searchast"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func main() {
 		}
 	}()
 
-	sourceTree, err := findctx.NewSourceTree(context.Background(), f, filename)
+	sourceTree, err := searchast.NewSourceTree(context.Background(), f, filename)
 	if err != nil {
 		log.Fatalf("Error opening source file '%s': %v", filename, err)
 	}
@@ -48,17 +48,17 @@ func main() {
 		log.Fatalf("No matches found")
 	}
 
-	overivewContextBuilder := findctx.NewContextBuilder(
-		findctx.WithSurroundingLines(2),
-		findctx.WithParentContext(false),
-		findctx.WithCloseScopeGaps(false),
-		findctx.WithExpandChildScopes(false),
-		findctx.WithChildLines(3),
+	overivewContextBuilder := searchast.NewContextBuilder(
+		searchast.WithSurroundingLines(2),
+		searchast.WithParentContext(false),
+		searchast.WithCloseScopeGaps(false),
+		searchast.WithExpandChildScopes(false),
+		searchast.WithChildLines(3),
 	)
 
 	linesToShow := overivewContextBuilder.AddContext(sourceTree, linesOfInterest)
 
-	formatter := findctx.NewTextFormatter()
+	formatter := searchast.NewTextFormatter()
 	output := formatter.Format(sourceTree.Lines(), linesToShow, linesOfInterest)
 	fmt.Print(output)
 }

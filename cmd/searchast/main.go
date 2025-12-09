@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/andersonjoseph/findctx"
+	"github.com/andersonjoseph/searchast"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 		}
 	}()
 
-	sourceTree, err := findctx.NewSourceTree(context.Background(), f, filename)
+	sourceTree, err := searchast.NewSourceTree(context.Background(), f, filename)
 	if err != nil {
 		log.Fatalf("Error opening source file '%s': %v", filename, err)
 	}
@@ -66,16 +66,16 @@ func main() {
 		log.Fatalf("No matches found")
 	}
 
-	linesToShow := findctx.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
-	formatterOpts := []findctx.TextFormatterOption{
-		findctx.WithHighlightSymbol(highlightSymbol),
-		findctx.WithContextSymbol(contextSymbol),
-		findctx.WithGapSymbol(gapSymbol),
-		findctx.WithSpacer(spacer),
-		findctx.WithLineNumbers(lineNumbers),
+	linesToShow := searchast.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
+	formatterOpts := []searchast.TextFormatterOption{
+		searchast.WithHighlightSymbol(highlightSymbol),
+		searchast.WithContextSymbol(contextSymbol),
+		searchast.WithGapSymbol(gapSymbol),
+		searchast.WithSpacer(spacer),
+		searchast.WithLineNumbers(lineNumbers),
 	}
 
-	formatter := findctx.NewTextFormatter(formatterOpts...)
+	formatter := searchast.NewTextFormatter(formatterOpts...)
 	output := formatter.Format(sourceTree.Lines(), linesToShow, linesOfInterest)
 	fmt.Print(output)
 }
