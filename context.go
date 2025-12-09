@@ -1,4 +1,4 @@
-package findctx
+package searchast
 
 import (
 	"slices"

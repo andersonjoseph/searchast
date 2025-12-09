@@ -9,12 +9,12 @@ tasks:
   build:
     desc: Build the main executable
     cmds:
-      - go build ./cmd/findctx
+      - go build ./cmd/searchast
   
-  findctx:
+  searchast:
     desc: Run the program directly
     cmds:
-      - go run ./cmd/findctx {{.CLI_ARGS}}
+      - go run ./cmd/searchast {{.CLI_ARGS}}
 
   overview:
     desc: Run the program directly

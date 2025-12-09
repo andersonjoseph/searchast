@@ -56,8 +56,8 @@ var langToFactory = make(map[string]func() unsafe.Pointer)
 var langCache = make(map[string]*sitter.Language)
 
 func init() {
-	supportedLangs := []struct{
-		factory func() unsafe.Pointer
+	supportedLangs := []struct {
+		factory    func() unsafe.Pointer
 		extensions []string
 	}{
 		{javascript.GetLanguage, []string{".js", ".mjs"}},

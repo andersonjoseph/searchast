@@ -1,4 +1,4 @@
-module github.com/andersonjoseph/findctx
+module github.com/andersonjoseph/searchast
 
 go 1.24.6
 
