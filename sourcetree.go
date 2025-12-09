@@ -58,12 +58,13 @@ func NewSourceTree(ctx context.Context, r io.Reader, filename string) (*sourceTr
 		return nil, fmt.Errorf("failed to read file %s: %w", filename, err)
 	}
 	parser := sitter.NewParser()
+	defer parser.Close()
 
-	langInfo, err := language.FromFilename(filename)
+	lang, err := language.FromFilename(filename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to determine language for file %s: %w", filename, err)
 	}
-	parser.SetLanguage(langInfo.SitterLang)
+	parser.SetLanguage(lang)
 
 	tree, err := parser.ParseCtx(ctx, nil, sourceCode)
 	if err != nil {

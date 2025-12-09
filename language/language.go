@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"unsafe"
 
 	// this language list is based on the top most popular programming, scripting, and markup languages
 	// according to stack overflow survey: https://survey.stackoverflow.co/2025/technology
@@ -51,81 +52,76 @@ import (
 	sitter "github.com/smacker/go-tree-sitter"
 )
 
-type Info struct {
-	Name       string
-	SitterLang *sitter.Language
-}
+var langToFactory = make(map[string]func() unsafe.Pointer)
+var langCache = make(map[string]*sitter.Language)
 
-var extToLang = map[string]Info{
-	".js":     {Name: "JavaScript", SitterLang: sitter.NewLanguage(javascript.GetLanguage())},
-	".mjs":    {Name: "JavaScript", SitterLang: sitter.NewLanguage(javascript.GetLanguage())},
-	".ts":     {Name: "TypeScript", SitterLang: sitter.NewLanguage(typescript.GetLanguage())},
-	".tsx":    {Name: "TypeScript", SitterLang: sitter.NewLanguage(typescript.GetLanguage())},
-	".py":     {Name: "Python", SitterLang: sitter.NewLanguage(python.GetLanguage())},
-	".go":     {Name: "Go", SitterLang: sitter.NewLanguage(golang.GetLanguage())},
-	".rs":     {Name: "Rust", SitterLang: sitter.NewLanguage(rust.GetLanguage())},
-	".java":   {Name: "Java", SitterLang: sitter.NewLanguage(java.GetLanguage())},
-	".c":      {Name: "C", SitterLang: sitter.NewLanguage(c.GetLanguage())},
-	".cpp":    {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".hpp":    {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".hxx":    {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".hh":     {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".cc":     {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".cxx":    {Name: "C++", SitterLang: sitter.NewLanguage(cpp.GetLanguage())},
-	".cs":     {Name: "C#", SitterLang: sitter.NewLanguage(c_sharp.GetLanguage())},
-	".sh":     {Name: "Bash", SitterLang: sitter.NewLanguage(bash.GetLanguage())},
-	".html":   {Name: "HTML", SitterLang: sitter.NewLanguage(html.GetLanguage())},
-	".htm":    {Name: "HTML", SitterLang: sitter.NewLanguage(html.GetLanguage())},
-	".css":    {Name: "CSS", SitterLang: sitter.NewLanguage(css.GetLanguage())},
-	".rb":     {Name: "Ruby", SitterLang: sitter.NewLanguage(ruby.GetLanguage())},
-	".php":    {Name: "PHP", SitterLang: sitter.NewLanguage(php.GetLanguage())},
-	".php3":   {Name: "PHP", SitterLang: sitter.NewLanguage(php.GetLanguage())},
-	".phtml":  {Name: "PHP", SitterLang: sitter.NewLanguage(php.GetLanguage())},
-	".swift":  {Name: "Swift", SitterLang: sitter.NewLanguage(swift.GetLanguage())},
-	".kt":     {Name: "Kotlin", SitterLang: sitter.NewLanguage(kotlin.GetLanguage())},
-	".kts":    {Name: "Kotlin", SitterLang: sitter.NewLanguage(kotlin.GetLanguage())},
-	".scala":  {Name: "Scala", SitterLang: sitter.NewLanguage(scala.GetLanguage())},
-	".sql":    {Name: "SQL", SitterLang: sitter.NewLanguage(sql.GetLanguage())},
-	".lua":    {Name: "Lua", SitterLang: sitter.NewLanguage(lua.GetLanguage())},
-	".pl":     {Name: "Perl", SitterLang: sitter.NewLanguage(perl.GetLanguage())},
-	".ps1":    {Name: "PowerShell", SitterLang: sitter.NewLanguage(powershell.GetLanguage())},
-	".dart":   {Name: "Dart", SitterLang: sitter.NewLanguage(dart.GetLanguage())},
-	".r":      {Name: "R", SitterLang: sitter.NewLanguage(r.GetLanguage())},
-	".zig":    {Name: "Zig", SitterLang: sitter.NewLanguage(zig.GetLanguage())},
-	".adb":    {Name: "Ada", SitterLang: sitter.NewLanguage(ada.GetLanguage())},
-	".ads":    {Name: "Ada", SitterLang: sitter.NewLanguage(ada.GetLanguage())},
-	".asm":    {Name: "Assembly", SitterLang: sitter.NewLanguage(asm.GetLanguage())},
-	".s":      {Name: "Assembly", SitterLang: sitter.NewLanguage(asm.GetLanguage())},
-	".cbl":    {Name: "COBOL", SitterLang: sitter.NewLanguage(cobol.GetLanguage())},
-	".cob":    {Name: "COBOL", SitterLang: sitter.NewLanguage(cobol.GetLanguage())},
-	".lisp":   {Name: "Common Lisp", SitterLang: sitter.NewLanguage(commonlisp.GetLanguage())},
-	".cl":     {Name: "Common Lisp", SitterLang: sitter.NewLanguage(commonlisp.GetLanguage())},
-	".ex":     {Name: "Elixir", SitterLang: sitter.NewLanguage(elixir.GetLanguage())},
-	".exs":    {Name: "Elixir", SitterLang: sitter.NewLanguage(elixir.GetLanguage())},
-	".erl":    {Name: "Erlang", SitterLang: sitter.NewLanguage(erlang.GetLanguage())},
-	".hrl":    {Name: "Erlang", SitterLang: sitter.NewLanguage(erlang.GetLanguage())},
-	".f":      {Name: "Fortran", SitterLang: sitter.NewLanguage(fortran.GetLanguage())},
-	".for":    {Name: "Fortran", SitterLang: sitter.NewLanguage(fortran.GetLanguage())},
-	".f90":    {Name: "Fortran", SitterLang: sitter.NewLanguage(fortran.GetLanguage())},
-	".f95":    {Name: "Fortran", SitterLang: sitter.NewLanguage(fortran.GetLanguage())},
-	".f03":    {Name: "Fortran", SitterLang: sitter.NewLanguage(fortran.GetLanguage())},
-	".fs":     {Name: "F#", SitterLang: sitter.NewLanguage(fsharp.GetLanguage())},
-	".fsi":    {Name: "F#", SitterLang: sitter.NewLanguage(fsharp.GetLanguage())},
-	".gd":     {Name: "GDScript", SitterLang: sitter.NewLanguage(gdscript.GetLanguage())},
-	".gleam":  {Name: "Gleam", SitterLang: sitter.NewLanguage(gleam.GetLanguage())},
-	".groovy": {Name: "Groovy", SitterLang: sitter.NewLanguage(groovy.GetLanguage())},
-	".m":      {Name: "MATLAB", SitterLang: sitter.NewLanguage(matlab.GetLanguage())},
-	".ml":     {Name: "OCaml", SitterLang: sitter.NewLanguage(ocaml.GetLanguage())},
-	".mli":    {Name: "OCaml", SitterLang: sitter.NewLanguage(ocaml.GetLanguage())},
-	".pas":    {Name: "Pascal", SitterLang: sitter.NewLanguage(pascal.GetLanguage())},
-	".pp":     {Name: "Pascal", SitterLang: sitter.NewLanguage(pascal.GetLanguage())},
-	".pro":    {Name: "Prolog", SitterLang: sitter.NewLanguage(prolog.GetLanguage())},
-}
-
-func FromFilename(filename string) (*Info, error) {
-	ext := strings.ToLower(filepath.Ext(filename))
-	if info, ok := extToLang[ext]; ok {
-		return &info, nil
+func init() {
+	supportedLangs := []struct{
+		factory func() unsafe.Pointer
+		extensions []string
+	}{
+		{javascript.GetLanguage, []string{".js", ".mjs"}},
+		{typescript.GetLanguage, []string{".ts", ".tsx"}},
+		{python.GetLanguage, []string{".py"}},
+		{golang.GetLanguage, []string{".go"}},
+		{rust.GetLanguage, []string{".rs"}},
+		{java.GetLanguage, []string{".java"}},
+		{c.GetLanguage, []string{".c"}},
+		{cpp.GetLanguage, []string{".cpp", ".hpp", ".hxx", ".hh", ".cc", ".cxx"}},
+		{c_sharp.GetLanguage, []string{".cs"}},
+		{bash.GetLanguage, []string{".sh"}},
+		{html.GetLanguage, []string{".html", ".htm"}},
+		{css.GetLanguage, []string{".css"}},
+		{ruby.GetLanguage, []string{".rb"}},
+		{php.GetLanguage, []string{".php", ".php3", ".phtml"}},
+		{swift.GetLanguage, []string{".swift"}},
+		{kotlin.GetLanguage, []string{".kt", ".kts"}},
+		{scala.GetLanguage, []string{".scala"}},
+		{sql.GetLanguage, []string{".sql"}},
+		{lua.GetLanguage, []string{".lua"}},
+		{perl.GetLanguage, []string{".pl"}},
+		{powershell.GetLanguage, []string{".ps1"}},
+		{dart.GetLanguage, []string{".dart"}},
+		{r.GetLanguage, []string{".r"}},
+		{zig.GetLanguage, []string{".zig"}},
+		{ada.GetLanguage, []string{".adb", ".ads"}},
+		{asm.GetLanguage, []string{".asm", ".s"}},
+		{cobol.GetLanguage, []string{".cbl", ".cob"}},
+		{commonlisp.GetLanguage, []string{".lisp", ".cl"}},
+		{elixir.GetLanguage, []string{".ex", ".exs"}},
+		{erlang.GetLanguage, []string{".erl", ".hrl"}},
+		{fortran.GetLanguage, []string{".f", ".for", ".f90", ".f95", ".f03"}},
+		{fsharp.GetLanguage, []string{".fs", ".fsi"}},
+		{gdscript.GetLanguage, []string{".gd"}},
+		{gleam.GetLanguage, []string{".gleam"}},
+		{groovy.GetLanguage, []string{".groovy"}},
+		{matlab.GetLanguage, []string{".m"}},
+		{ocaml.GetLanguage, []string{".ml", ".mli"}},
+		{pascal.GetLanguage, []string{".pas", ".pp"}},
+		{prolog.GetLanguage, []string{".pro"}},
 	}
-	return nil, fmt.Errorf("no language found for file extension %s", ext)
+
+	for _, lang := range supportedLangs {
+		for _, ext := range lang.extensions {
+			langToFactory[ext] = lang.factory
+		}
+	}
+}
+
+func FromFilename(filename string) (*sitter.Language, error) {
+	ext := strings.ToLower(filepath.Ext(filename))
+
+	if lang, exists := langCache[ext]; exists {
+		return lang, nil
+	}
+
+	factory, exists := langToFactory[ext]
+	if !exists {
+		return nil, fmt.Errorf("no language found for file extension %s", ext)
+	}
+
+	lang := sitter.NewLanguage(factory())
+	langCache[ext] = lang
+
+	return lang, nil
 }
