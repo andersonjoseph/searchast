@@ -19,6 +19,7 @@ func main() {
 		contextSymbol   string
 		gapSymbol       string
 		spacer          string
+		colorFlag       string
 	)
 
 	flag.StringVar(&filename, "filename", "", "Source code file to search (required)")
@@ -28,11 +29,13 @@ func main() {
 	flag.StringVar(&contextSymbol, "context-symbol", "│", "Symbol for context lines")
 	flag.StringVar(&gapSymbol, "gap-symbol", "⋮", "Symbol for gaps between line blocks")
 	flag.StringVar(&spacer, "spacer", " ", "Spacer between line numbers and content")
+	flag.StringVar(&colorFlag, "color", "auto", "Color output: auto, always, never")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "Example: %s -filename sourcetree.go -pattern 'AI\\\\?' -highlight-symbol '>>' -context-symbol '| '\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Color options: auto (detect terminal), always, never\n")
 	}
 
 	flag.Parse()
@@ -67,12 +70,26 @@ func main() {
 	}
 
 	linesToShow := searchast.NewContextBuilder().AddContext(sourceTree, linesOfInterest)
+
+	var enableColors bool
+	switch colorFlag {
+	case "always":
+		enableColors = true
+	case "never":
+		enableColors = false
+	case "auto":
+		fallthrough
+	default:
+		enableColors = true
+	}
+
 	formatterOpts := []searchast.TextFormatterOption{
 		searchast.WithHighlightSymbol(highlightSymbol),
 		searchast.WithContextSymbol(contextSymbol),
 		searchast.WithGapSymbol(gapSymbol),
 		searchast.WithSpacer(spacer),
 		searchast.WithLineNumbers(lineNumbers),
+		searchast.WithColors(enableColors),
 	}
 
 	formatter := searchast.NewTextFormatter(formatterOpts...)

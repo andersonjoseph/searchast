@@ -11,14 +11,19 @@ import (
 )
 
 func main() {
-	var filename string
+	var (
+		filename  string
+		colorFlag string
+	)
 
 	flag.StringVar(&filename, "filename", "", "Source code file to search (required)")
+	flag.StringVar(&colorFlag, "color", "auto", "Color output: auto, always, never")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "Example: %s -filename sourcetree.go -pattern 'AI\\\\?'\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Example: %s -filename sourcetree.go\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Color options: auto (detect terminal), always, never\n")
 	}
 
 	flag.Parse()
@@ -58,7 +63,19 @@ func main() {
 
 	linesToShow := overivewContextBuilder.AddContext(sourceTree, linesOfInterest)
 
-	formatter := searchast.NewTextFormatter()
+	var enableColors bool
+	switch colorFlag {
+	case "always":
+		enableColors = true
+	case "never":
+		enableColors = false
+	case "auto":
+		fallthrough
+	default:
+		enableColors = true
+	}
+
+	formatter := searchast.NewTextFormatter(searchast.WithColors(enableColors))
 	output := formatter.Format(sourceTree.Lines(), linesToShow, linesOfInterest)
 	fmt.Print(output)
 }

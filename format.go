@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+const (
+	ansiCodeReset = "\033[0m"
+	ansiCodeRed   = "\033[31m"
+)
+
 type Formatter interface {
 	Format(lines []line, linesToShow Set[lineNumber], linesToHighlight Set[lineNumber]) string
 }
@@ -15,6 +20,7 @@ type TextFormatter struct {
 	contextSymbol   string
 	gapSymbol       string
 	spacer          string
+	enableColors    bool
 }
 
 type TextFormatterOption func(*TextFormatter)
@@ -26,6 +32,7 @@ func NewTextFormatter(opts ...TextFormatterOption) *TextFormatter {
 		contextSymbol:   "│",
 		gapSymbol:       "⋮",
 		spacer:          " ",
+		enableColors:    false,
 	}
 
 	for _, opt := range opts {
@@ -62,6 +69,13 @@ func WithGapSymbol(symbol string) TextFormatterOption {
 func WithSpacer(spacer string) TextFormatterOption {
 	return func(tf *TextFormatter) {
 		tf.spacer = spacer
+	}
+}
+
+
+func WithColors(enabled bool) TextFormatterOption {
+	return func(tf *TextFormatter) {
+		tf.enableColors = enabled
 	}
 }
 
@@ -114,7 +128,14 @@ func (tf *TextFormatter) Format(lines []line, linesToShow Set[lineNumber], lines
 			prefix = fmt.Sprintf("%s%s", symbol, tf.spacer)
 		}
 
-		output.WriteString(fmt.Sprintf("%s%s\n", prefix, line.text))
+		var lineText string
+		if tf.enableColors && linesToHighlight.Has(lineNumber(i)) {
+			lineText = ansiCodeRed + line.text + ansiCodeReset
+		} else {
+			lineText = line.text
+		}
+
+		output.WriteString(fmt.Sprintf("%s%s\n", prefix, lineText))
 	}
 
 	return output.String()
