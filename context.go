@@ -63,12 +63,10 @@ func (cb *contextBuilder) AddContext(st *sourceTree, linesOfInterest Set[lineNum
 		cb.addSurroundingLines(st, linesOfInterest)
 	}
 
-	var linesSoFar []lineNumber
-	linesSoFar = cb.linesToShow.ToSlice()
+	linesSoFar := cb.linesToShow.ToSlice()
 
 	// If any of our interesting lines so far is start of a code block
 	// let's mark every line inside of that block as interesting
-	// can you gimme some suggestions for this option AI? I'm not that happy with the name
 	if cb.ExpandInitialScopes {
 		for _, line := range linesSoFar {
 			if st.lines[line].scope.size() > 0 {

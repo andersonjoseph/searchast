@@ -72,7 +72,6 @@ func WithSpacer(spacer string) TextFormatterOption {
 	}
 }
 
-
 func WithColors(enabled bool) TextFormatterOption {
 	return func(tf *TextFormatter) {
 		tf.enableColors = enabled

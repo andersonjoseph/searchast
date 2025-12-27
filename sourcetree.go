@@ -50,7 +50,7 @@ type sourceTree struct {
 	lines []line
 }
 
-// NewSourceTree costructs a new sourceTree from a reader and filename.
+// NewSourceTree constructs a new sourceTree from a reader and filename.
 // the filename is used to determine the programming language.
 func NewSourceTree(ctx context.Context, r io.Reader, filename string) (*sourceTree, error) {
 	sourceCode, err := io.ReadAll(r)
