@@ -38,7 +38,5 @@ func (s Set[T]) ToSlice() []T {
 }
 
 func (s *Set[T]) Clear() {
-	for k := range *s {
-		delete(*s, k)
-	}
+	*s = make(Set[T])
 }
