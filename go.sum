@@ -46,6 +46,8 @@ github.com/alexaandru/go-sitter-forest/lua v1.9.3 h1:A3Tas9sLRVc1kgD4Q477xhW+BfZ
 github.com/alexaandru/go-sitter-forest/lua v1.9.3/go.mod h1:7MFGPolXojnCrVMHI9TIpB1OCLY8n18Cb4XyKr+hmfE=
 github.com/alexaandru/go-sitter-forest/matlab v1.9.4 h1:UQv7rF59vVywSN5z9pmqheNvXjl472Xsr+iyrMB3dsE=
 github.com/alexaandru/go-sitter-forest/matlab v1.9.4/go.mod h1:lvLM2cLQqT/gu9dp6K7/jUtMiTqOQnvqHnGmxmL9aXA=
+github.com/alexaandru/go-sitter-forest/nix v1.9.4 h1:1eUmXiGM01OpfVDMxSu5aN50q3zCb0ArycoSDcx1BXg=
+github.com/alexaandru/go-sitter-forest/nix v1.9.4/go.mod h1:nbtvKRD56GICG+j92DNSOEXwIp8gD4dh/3kXz3kd+5o=
 github.com/alexaandru/go-sitter-forest/ocaml v1.9.6 h1:mN7v3irDwWO/KrFw6RCX9WBKCZzeCQvRNRc8fyu12wM=
 github.com/alexaandru/go-sitter-forest/ocaml v1.9.6/go.mod h1:xPI6i1J71VDFB1mIll4Imge2G45UjDnkGiOzWc+xvX4=
 github.com/alexaandru/go-sitter-forest/pascal v1.9.2 h1:nd/sAFLXXPbq/lmM/QkNu5Vx3yZ4SvF2cuOGsmZPijQ=

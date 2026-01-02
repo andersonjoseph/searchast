@@ -27,6 +27,7 @@ require (
 	github.com/alexaandru/go-sitter-forest/kotlin v1.9.4
 	github.com/alexaandru/go-sitter-forest/lua v1.9.3
 	github.com/alexaandru/go-sitter-forest/matlab v1.9.4
+	github.com/alexaandru/go-sitter-forest/nix v1.9.4
 	github.com/alexaandru/go-sitter-forest/ocaml v1.9.6
 	github.com/alexaandru/go-sitter-forest/pascal v1.9.2
 	github.com/alexaandru/go-sitter-forest/perl v1.9.9

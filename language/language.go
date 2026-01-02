@@ -34,6 +34,7 @@ import (
 	"github.com/alexaandru/go-sitter-forest/kotlin"
 	"github.com/alexaandru/go-sitter-forest/lua"
 	"github.com/alexaandru/go-sitter-forest/matlab"
+	"github.com/alexaandru/go-sitter-forest/nix"
 	"github.com/alexaandru/go-sitter-forest/ocaml"
 	"github.com/alexaandru/go-sitter-forest/pascal"
 	"github.com/alexaandru/go-sitter-forest/perl"
@@ -99,6 +100,7 @@ func init() {
 		{ocaml.GetLanguage, []string{".ml", ".mli"}},
 		{pascal.GetLanguage, []string{".pas", ".pp"}},
 		{prolog.GetLanguage, []string{".pro"}},
+		{nix.GetLanguage, []string{".nix"}},
 	}
 
 	for _, lang := range supportedLangs {
